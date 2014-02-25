@@ -1,7 +1,7 @@
 [BITS 16]
 [ORG 0x7C00]
 
-main:
+begin:
 mov ax,0x0000
 mov ds,ax
 mov si,Banner

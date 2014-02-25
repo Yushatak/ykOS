@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include "kernel.h"
 #include "commands.h"
+#include "idt.h"
 
 //Kernel Memory Map
 /*
@@ -11,9 +12,6 @@
 0x2000+ - Kernel/Kernel Data
 
 */
-
-//External Symbols
-extern void generateIDT(); //From "idt.c"
 
 //String Declarations
 char message[] = "32-Bit Kernel Loaded";
@@ -45,9 +43,7 @@ int promptLine = 24;
 
 //Entry Point (this must remain the first function!)
 void main(void)
-{	
-	ClearScreen();
-	
+{		
 	//Remap PIC IRQ Table 0->32
 	outb(0x20, 0x11);
 	outb(0xA0, 0x11);
@@ -62,7 +58,7 @@ void main(void)
 	
 	//Generate IDT
 	generateIDT();
-	
+	ClearScreen();
 	registerISR(0x21, &KeyboardHandler);
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);

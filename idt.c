@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "idt.h"
 #include "kernel.h"
 
 //External Symbols
@@ -7,16 +8,10 @@ extern isr_registers_t* ISR0, ISR1, ISR2, ISR3, ISR4, ISR5, ISR6, ISR7, ISR8, IS
 //Interrupt Request Wrappers (from ISR.ASM)
 extern isr_registers_t* IRQ0, IRQ1, IRQ2, IRQ3, IRQ4, IRQ5, IRQ6, IRQ7, IRQ8, IRQ9, IRQ10, IRQ11, IRQ12, IRQ13, IRQ14, IRQ15;
 uint32_t ISR[256];
-
-//From Kernel.c
-extern void memPut(void* address, uint8_t value);
-extern void memFill(void* address, int length, uint8_t value);
-
-void generateIDT();
-static void setIDT(uint8_t idx, uint32_t base, uint16_t selector, uint8_t flags);
-static inline void lidt(int base, uint16_t size);
-
 idt_entry_t idt_entries[256];
+
+//Static Declarations
+static void setIDT(uint8_t idx, uint32_t base, uint16_t selector, uint8_t flags);
 
 void generateIDT()
 { 
@@ -70,11 +65,10 @@ void generateIDT()
 	ISR[47] = (uint32_t)&IRQ15;
 	
 	memFill(idt_entries, sizeof(idt_entry_t)*256, 0);
-	for (int i = 0; i < 48; i++)
+	for (int i = 0; i < 256; i++)
 	{
 		if (i != 2) setIDT(i, (uint32_t)ISR[i], 0x08, 0x8E);
 	}
-	
 	lidt((int)&idt_entries, sizeof(idt_entry_t)*256);
 }
 
@@ -87,7 +81,7 @@ static void setIDT(uint8_t idx, uint32_t base, uint16_t selector, uint8_t flags)
 	idt_entries[idx].flags = flags; // | 0x60 to give privilege level 3 user mode stuff for later.
 }
 
-static inline void lidt(int base, uint16_t size)
+inline void lidt(uint32_t base, uint16_t size)
 {
 	struct
 	{
@@ -96,7 +90,7 @@ static inline void lidt(int base, uint16_t size)
 	} __attribute__((packed)) IDTR;
 	
 	IDTR.length = size;
-	IDTR.base = (uint32_t)base;
-	__asm__ ("lidt [%0]" : : "p"(&IDTR));
-	__asm__ ("sti");
+	IDTR.base = base;
+	__asm__ volatile ("lidt [%0]" : : "m"(IDTR));
+	__asm__ volatile ("sti");
 }

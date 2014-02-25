@@ -137,6 +137,7 @@ static const uint8_t char_nybbles[] =
 static const int keybuffer_size = 256;
 
 //Function Declarations
+void main(void);
 uint32_t charsToInt(char* in);
 void Scroll();
 bool StringCompare(char* buffer1, char* buffer2);
