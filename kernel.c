@@ -20,9 +20,9 @@ char message[] = "32-Bit Kernel Loaded";
 char prompt[] = "ykOS>";
 
 //Buffers
-unsigned char keybuffer[256] = {0};
+char keybuffer[256] = {0};
 int keybuffer_ptr = 0;
-unsigned char cmdbuffer[256] = {0};
+char cmdbuffer[256] = {0};
 
 //Pointers
 uint8_t* memory = (uint8_t*)0x0;
@@ -105,8 +105,8 @@ void ClearLine(int y)
 
 void CommandParser()
 {
-	unsigned char* address = cmdbuffer;
-	uint8_t* splitPos = 0;
+	char* address = cmdbuffer;
+	char* splitPos = 0;
 	while (*address)
 	{
 		//Set splitPos to the address after the first space found in the command string, to denote the split where args begin.
@@ -144,7 +144,7 @@ void CommandParser()
 
 void KeyboardHandler(isr_registers_t* regs)
 {
-	unsigned char scancode = inb(0x60);
+	uint8_t scancode = inb(0x60);
 	
 	//Enter Pressed
 	if (scancode == 0x1C)
@@ -281,11 +281,9 @@ void OutputLengthToPort(char *source, int port, int length)
 
 void Scroll()
 {
-	int y = 1;
-	for (y; y <= promptLine; y++)
+	for (int y = 1; y <= promptLine; y++)
 	{
-		int x = 0;
-		for (x; x <  ScreenColumns; x++)
+		for (int x = 0; x <  ScreenColumns; x++)
 		{
 			vga_memory[ScreenColumns * (y - 1) + x] = vga_memory[ScreenColumns * y + x];
 		}
@@ -350,11 +348,9 @@ void OutputHexByte(uint8_t byte)
 
 void ClearScreen()
 {
-	int y = 0;
-	for (y; y < 25; y++)
+	for (int y = 0; y < 25; y++)
 	{
-		int x = 0;
-		for (x; x < 80; x++)
+		for (int x = 0; x < 80; x++)
 		{
 			vga_memory[ScreenColumns * y + x] = 0x0720;
 		}
@@ -373,27 +369,29 @@ char NibbleToChar(int nibble)
 	return (nibble < 10 ? '0' : 'A' - 10) + nibble;
 }
 
-void streamToHex(char* stream, char* hex, size_t limit)
+void streamToHex(void* stream, void* hex, size_t limit)
 {
+	uint8_t* str = stream;
+	uint8_t* out = hex;
 	int i = 0;
-	while (*stream)
+	while (*str)
 	{
 		if (i+2 > limit) break;
 		//if (i+5 > limit) break;
-		if (*stream == 0x0) break;
+		if (*str == 0x0) break;
 		char result[2] = {0};
-		intToChars(*stream++, result);
+		intToChars(*str++, result);
 		//hex[i++] = '0'; //hex prefix
 		//hex[i++] = 'x';
-		hex[i++] = result[0]; //actual hex
-		hex[i++] = result[1];
+		out[i++] = result[0]; //actual hex
+		out[i++] = result[1];
 		//if (*++stream)
 		//{
 		//	hex[i++] = ','; //separator for visibility
 		//	hex[i++] = ' ';
 		//}
 	}
-	hex[i] = 0x0; //terminator
+	out[i] = 0x0; //terminator
 }
 
 //These functions could be useful in situations where speed is very important.
@@ -418,10 +416,8 @@ void intToChars(unsigned int val, char* out)
 	//out[p++] = '0';
 	//out[p++] = 'x';
 	size_t digits = 1;
-	unsigned int length = val;
-	for (length; length >= 16; length /= 16) digits++;
-	size_t i = digits;
-	for (i; i != 0; i--)
+	for (unsigned int length = val; length >= 16; length /= 16) digits++;
+	for (size_t i = digits; i != 0; i--)
 	{
 		size_t pos = i - 1;
 		out[p + pos] = nybble_chars[val % 16];
@@ -436,7 +432,7 @@ uint32_t charsToInt(char* in)
 	uint32_t total = 0;
 	while (*in)
 	{
-		total = (total * 16) + char_nybbles[*in++];
+		total = (total * 16) + char_nybbles[*(uint8_t * )in++];
 	}
 	return total;
 }
@@ -493,42 +489,22 @@ void SetCursor(int x, int y)
 void memFill(void* address, int length, uint8_t value)
 {
 	int limit = (int)address + length;
-	for (address; (int)address <= limit; address++)
+	for (uint8_t* addr = address; (int)addr <= limit; addr++)
 	{
-		memPut(address, value);
+		memPut(addr, value);
 	}
 }
 
 void memFillW(void* address, int length, uint16_t value)
 {
 	int limit = (int)address + length;
-	for (address; (int)address <= limit; address+=2)
+	for (uint16_t* addr = address; (int)addr <= limit; addr+=2)
 	{
-		memPutW(address, value);
+		memPutW(addr, value);
 	}
 }
 
 void registerISR(uint8_t idx, isr_t isr)
 {
 	intHandlers[idx] = isr;
-}
-
-static inline void outb(uint16_t port, uint8_t val)
-{
-	__asm__ volatile ("outb %1, %0" : : "a"(val), "Nd"(port));
-}
-
-static inline uint8_t inb(uint16_t port)
-{
-	uint8_t ret;
-	__asm__ volatile ("inb %0, %1" : "=a"(ret) : "Nd"(port));
-	return ret;
-}
-
-static inline void io_wait(void)
-{
-    /* TODO: This is probably fragile. */
-    __asm__ volatile ( "jmp 1f\n\t"
-                   "1:jmp 2f\n\t"
-                   "2:" );
 }

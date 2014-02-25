@@ -3,14 +3,14 @@
 #include "kernel.h"
 #include "commands.h"
 
-void cmd_Convert(uint8_t* args)
+void cmd_Convert(char* args)
 {
 	char result[keybuffer_size*6]; //up to 6 chars out per input char, so multiply by 6
 	streamToHex((unsigned char*)args, result, sizeof(result));
 	Output(result);
 }
 
-void cmd_Peek(uint8_t* args, size_t argsize)
+void cmd_Peek(char* args, size_t argsize)
 {
 	Output(args);
 	Output(":");

@@ -23,7 +23,7 @@ typedef struct isr_registers
 typedef void (*isr_t)(isr_registers_t*);
 void registerISR(uint8_t idx, isr_t ISR);
 
-static unsigned char keycode[128] =
+static const char keycode[128] =
 {
 		0, //unused 
 		0, //esc
@@ -65,7 +65,7 @@ static unsigned char keycode[128] =
 		//the rest are release scancodes mirroring the above for the most part
 };
 
-static unsigned char keycode_shift[128] =
+static const char keycode_shift[128] =
 {
 		0, //unused 
 		0, //esc
@@ -108,7 +108,7 @@ static unsigned char keycode_shift[128] =
 };
 
 static const char nybble_chars[] = "0123456789ABCDEF";
-static const char char_nybbles[] = 
+static const uint8_t char_nybbles[] = 
 {
 	['0'] = 0x0,
 	['1'] = 0x1,
@@ -166,12 +166,31 @@ void memCopyInt(void* srcAddress, void* destAddress);
 void SetCursor(int x, int y);
 void memFill(void* address, int length, uint8_t value);
 void memFillW(void* address, int length, uint16_t value);
-void streamToHex(char* stream, char* hex, size_t limit);
+void streamToHex(void* stream, void* hex, size_t limit);
 
 //Inline ASM
-static inline void outb(uint16_t port, uint8_t val);
-static inline uint8_t inb(uint16_t port);
-static inline void io_wait(void);
+//inline void outb(uint16_t port, uint8_t val);
+//inline uint8_t inb(uint16_t port);
+//inline void io_wait(void);
+static inline void outb(uint16_t port, uint8_t val)
+{
+	__asm__ volatile ("outb %1, %0" : : "a"(val), "Nd"(port));
+}
+
+static inline uint8_t inb(uint16_t port)
+{
+	uint8_t ret;
+	__asm__ volatile ("inb %0, %1" : "=a"(ret) : "Nd"(port));
+	return ret;
+}
+
+static inline void io_wait(void)
+{
+    /* TODO: This is probably fragile. */
+    __asm__ volatile ( "jmp 1f\n\t"
+                   "1:jmp 2f\n\t"
+                   "2:" );
+}
 
 //Handlers
 void KeyboardHandler(isr_registers_t* regs);

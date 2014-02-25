@@ -70,8 +70,7 @@ void generateIDT()
 	ISR[47] = (uint32_t)&IRQ15;
 	
 	memFill(idt_entries, sizeof(idt_entry_t)*256, 0);
-	int i = 0;
-	for (i; i < 48; i++)
+	for (int i = 0; i < 48; i++)
 	{
 		if (i != 2) setIDT(i, (uint32_t)ISR[i], 0x08, 0x8E);
 	}
