@@ -167,30 +167,8 @@ void SetCursor(int x, int y);
 void memFill(void* address, int length, uint8_t value);
 void memFillW(void* address, int length, uint16_t value);
 void streamToHex(void* stream, void* hex, size_t limit);
-
-//Inline ASM
-//inline void outb(uint16_t port, uint8_t val);
-//inline uint8_t inb(uint16_t port);
-//inline void io_wait(void);
-static inline void outb(uint16_t port, uint8_t val)
-{
-	__asm__ volatile ("outb %1, %0" : : "a"(val), "Nd"(port));
-}
-
-static inline uint8_t inb(uint16_t port)
-{
-	uint8_t ret;
-	__asm__ volatile ("inb %0, %1" : "=a"(ret) : "Nd"(port));
-	return ret;
-}
-
-static inline void io_wait(void)
-{
-    /* TODO: This is probably fragile. */
-    __asm__ volatile ( "jmp 1f\n\t"
-                   "1:jmp 2f\n\t"
-                   "2:" );
-}
+void outb(uint16_t port, uint8_t val);
+uint8_t inb(uint16_t port);
 
 //Handlers
 void KeyboardHandler(isr_registers_t* regs);
