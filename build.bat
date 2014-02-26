@@ -9,16 +9,16 @@ echo =Creating Directories...
 mkdir obj
 mkdir out
 echo =Placing Empty Floppy Image...
-copy vflopBLANK.img out\vflop.img /y
+copy build\vflopBLANK.img out\vflop.img /y
 echo Assembling .ASM Files...
-nasm boot.asm -o out\boot
-nasm isr.asm -f ELF -o obj\isr.o
+nasm source\asm\boot.asm -o out\boot
+nasm source\asm\isr.asm -f ELF -o obj\isr.o
 echo =Compiling Kernel...
-i486-elf-gcc -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -c kernel.c -o obj/kernel.o
-i486-elf-gcc -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -m32 -c idt.c -o obj/idt.o
-i486-elf-gcc -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -c commands.c -o obj/commands.o
+i486-elf-gcc -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -c source/c/kernel.c -o obj/kernel.o
+i486-elf-gcc -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -m32 -c source/c/idt.c -o obj/idt.o
+i486-elf-gcc -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -c source/c/commands.c -o obj/commands.o
 echo =Linking Kernel...
-i486-elf-ld obj/kernel.o obj/isr.o obj/idt.o obj/commands.o --relax -static -n -T kernel.ld -o obj/kernel.elf
+i486-elf-ld obj/kernel.o obj/isr.o obj/idt.o obj/commands.o --relax -static -n -T build/kernel.ld -o obj/kernel.elf
 echo =Finalizing Kernel...
 i486-elf-objcopy obj/kernel.elf --only-keep-debug out/kernel.sym
 i486-elf-objcopy obj/kernel.elf --set-start 0x2000 -O binary out/kernel
