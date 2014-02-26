@@ -1,4 +1,9 @@
 ENTRY(main)
+STARTUP(obj/kstub)
+INPUT(obj/kernel.o)
+INPUT(obj/isr.o)
+INPUT(obj/idt.o)
+INPUT(obj/commands.o)
 SECTIONS
 {
 	. = 0x2000;
@@ -17,3 +22,4 @@ SECTIONS
 		*(.bootstrap_stack)
 	}
 }
+OUTPUT(obj\kernel.elf)

@@ -13,12 +13,13 @@ copy build\vflopBLANK.img out\vflop.img /y
 echo Assembling .ASM Files...
 nasm source\asm\boot.asm -o out\boot
 nasm source\asm\isr.asm -f ELF -o obj\isr.o
+nasm source\asm\kstub.asm -f ELF -o obj\kstub
 echo =Compiling Kernel...
-i486-elf-gcc -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -c source/c/kernel.c -o obj/kernel.o
-i486-elf-gcc -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -m32 -c source/c/idt.c -o obj/idt.o
-i486-elf-gcc -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -c source/c/commands.c -o obj/commands.o
+i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -c source/c/kernel.c -o obj/kernel.o
+i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -m32 -c source/c/idt.c -o obj/idt.o
+i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -c source/c/commands.c -o obj/commands.o
 echo =Linking Kernel...
-i486-elf-ld obj/kernel.o obj/isr.o obj/idt.o obj/commands.o --relax -static -n -T build/kernel.ld -o obj/kernel.elf
+i486-elf-ld --relax -static -n -T build/kernel.ld
 echo =Finalizing Kernel...
 i486-elf-objcopy obj/kernel.elf --only-keep-debug out/kernel.sym
 i486-elf-objcopy obj/kernel.elf --set-start 0x2000 -O binary out/kernel
