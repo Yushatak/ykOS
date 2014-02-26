@@ -21,4 +21,4 @@ SECTIONS
 		*(.bootstrap_stack)
 	}
 }
-OUTPUT(obj\kernel.elf)
+OUTPUT(obj/kernel.elf)
