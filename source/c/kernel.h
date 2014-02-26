@@ -1,3 +1,13 @@
+/*
+Kernel Header (kernel.h)
+Part of the ykOS Project
+Written by J. "Yushatak" S.
+Copyright Yushatak 2014
+All Rights Reserved
+
+This provides a few type declarations, static translation/lookup tables, and declarations
+for kernel functions.
+*/
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>

@@ -1,4 +1,15 @@
 @echo off
+rem Build Script (build.bat)
+
+rem Part of the ykOS Project
+
+rem Written by J. "Yushatak" S.
+
+rem Copyright Yushatak 2014
+
+rem All Rights Reserved
+
+
 echo Building ykOS
 echo -------------
 path %path%;.\toolchain\bin\;.\toolchain\yk\;

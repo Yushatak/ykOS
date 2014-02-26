@@ -1,3 +1,13 @@
+;Catapult Loader (boot.asm)
+;Part of the ykOS Project
+;Written by J. "Yushatak" S.
+;Copyright Yushatak 2014
+;All Rights Reserved
+;
+;This is the floppy bootloader. It loads the specified (at the %rep line) 
+;number of sectors at 0x2000, sets up pmode and the GDT, then jumps
+;to them.
+;
 [BITS 16]
 [ORG 0x7C00]
 

@@ -1,3 +1,12 @@
+/*
+Commands (commands.c)
+Part of the ykOS Project
+Written by J. "Yushatak" S.
+Copyright Yushatak 2014
+All Rights Reserved
+
+This contains the code for individual built-in command applets in the kernel shell.
+*/
 #include <stdint.h>
 #include <stdbool.h>
 #include "kernel.h"

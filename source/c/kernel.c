@@ -1,3 +1,12 @@
+/*
+Kernel Core (kernel.c)
+Part of the ykOS Project
+Written by J. "Yushatak" S.
+Copyright Yushatak 2014
+All Rights Reserved
+
+This is the bulk of the kernel.
+*/
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>

@@ -1,3 +1,13 @@
+;Interrupt Service Routines (isr.asm)
+;Part of the ykOS Project
+;Written by J. "Yushatak" S.
+;Copyright Yushatak 2014
+;All Rights Reserved
+;
+;This contains the ISR stub and macros/macro calls to generate stubs to
+;set up values for each, then call the main stub, which then calls the c
+;stub.
+;
 [BITS 32]
 global ISR7, ISR15 ;Spurious, no macro to make them global.
 extern Interrupt
