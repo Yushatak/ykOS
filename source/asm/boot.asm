@@ -28,12 +28,13 @@ jmp 0x08:.main32
 
 [BITS 32]
 .main32:
-mov bx,0x10
+mov bx,0x10 ;Data Selector
 mov ds,bx
+mov ss,bx 
 mov es,bx
-mov ss,bx
 mov fs,bx
 mov gs,bx
+mov esp,0x20000 ;Kernel Stack
 jmp 0x2000
 
 [BITS 16]
@@ -72,6 +73,9 @@ align 4
 GDT_ADDR: dw 0
 GDT: dw GDT_END - GDT_ADDR - 1
 dd GDT_ADDR
+; GDT Entry Format
+; dw LIMIT0(8), BASE0(8)
+; dw ACCESS(8)/BASE1(8), BASE2(8)/FLAGS(4)/LIMIT1(4)
 dw 0xFFFF,0x0000 ;0x08
 dw 0x9B00,0x00CF ;0x08 flags
 dw 0xFFFF,0x0000 ;0x10

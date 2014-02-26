@@ -1,5 +1,4 @@
-ENTRY(main)
-STARTUP(obj/kstub)
+STARTUP(obj/kstub.o)
 INPUT(obj/kernel.o)
 INPUT(obj/isr.o)
 INPUT(obj/idt.o)

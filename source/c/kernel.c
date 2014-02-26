@@ -8,8 +8,9 @@
 //Kernel Memory Map
 /*
 
-0x07C0-0x07E0 - Bootloader/Bootloader Data (including GDT)
-0x2000+ - Kernel/Kernel Data
+0x00007C00-0x00007E00 - Bootloader/Bootloader Data (including GDT)
+0x00002000-0x00010000 - Kernel/Kernel Data (8K, not yet all used)
+0x00010000-0x00020000 - Kernel Stack (64K)
 
 */
 

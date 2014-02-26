@@ -13,7 +13,7 @@ copy build\vflopBLANK.img out\vflop.img /y
 echo Assembling .ASM Files...
 nasm source\asm\boot.asm -o out\boot
 nasm source\asm\isr.asm -f ELF -o obj\isr.o
-nasm source\asm\kstub.asm -f ELF -o obj\kstub
+nasm source\asm\kstub.asm -f ELF -o obj\kstub.o
 echo =Compiling Kernel...
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -c source/c/kernel.c -o obj/kernel.o
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -m32 -c source/c/idt.c -o obj/idt.o
