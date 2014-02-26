@@ -24,7 +24,12 @@ mov ch,0x00
 mov cl,0x02
 mov dh,0x00
 call readFloppy
-%rep 10;+1 Sectors
+%rep 17;+1 Sectors
+call readNext
+%endrep
+mov dh,0x01
+mov cl,0x01
+%rep 18;Sectors
 call readNext
 %endrep
 

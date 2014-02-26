@@ -13,6 +13,7 @@ This is the bulk of the kernel.
 #include "kernel.h"
 #include "commands.h"
 #include "idt.h"
+#include "page.h"
 
 //Kernel Memory Map
 /*
@@ -54,6 +55,10 @@ int promptLine = 24;
 //Entry Point (this must remain the first function!)
 int main(void)
 {		
+	__asm__ volatile("xchg bx,bx");
+	//Enable Paging
+	EnablePaging();
+	
 	//Remap PIC IRQ Table 0->32
 	outb(0x20, 0x11);
 	outb(0xA0, 0x11);
