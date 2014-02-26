@@ -42,7 +42,7 @@ bool alt = false;
 int promptLine = 24;
 
 //Entry Point (this must remain the first function!)
-void main(void)
+int main(void)
 {		
 	//Remap PIC IRQ Table 0->32
 	outb(0x20, 0x11);
