@@ -52,7 +52,7 @@ bool ctrl = false;
 bool alt = false;
 int promptLine = 24;
 
-//Entry Point (this must remain the first function!)
+//Entry Point
 int main(void)
 {		
 	__asm__ volatile("xchg bx,bx");

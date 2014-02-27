@@ -1,15 +1,10 @@
 @echo off
 rem Build Script (build.bat)
-
 rem Part of the ykOS Project
-
 rem Written by J. "Yushatak" S.
-
 rem Copyright Yushatak 2014
-
 rem All Rights Reserved
-
-
+rem
 echo Building ykOS
 echo -------------
 path %path%;.\toolchain\bin\;.\toolchain\yk\;
@@ -27,10 +22,11 @@ nasm source\asm\isr.asm -f ELF -o obj\isr.o
 nasm source\asm\kstub.asm -f ELF -o obj\kstub.o
 nasm source\asm\pgd.asm -f ELF -o obj\pgd.o
 echo =Compiling Kernel...
-i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -c source/c/kernel.c -o obj/kernel.o
-i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -m32 -c source/c/idt.c -o obj/idt.o
-i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -c source/c/commands.c -o obj/commands.o
-rem i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -c source/c/page.c -o obj/page.o
+i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -masm=intel -c source/c/kernel.c -o obj/kernel.o
+i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -masm=intel -m32 -c source/c/idt.c -o obj/idt.o
+i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -masm=intel -c source/c/commands.c -o obj/commands.o
+rem i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -nostdlib -masm=intel -
+c source/c/page.c -o obj/page.o
 echo =Linking Kernel...
 i486-elf-ld --relax -static -n -T build/kernel.ld
 echo =Finalizing Kernel...
