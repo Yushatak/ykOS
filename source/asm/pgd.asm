@@ -8,25 +8,22 @@ global EnablePaging
 
 align 4096
 PGD:
-dd 0b11001000000000000000000000000000 ;points to PGT
+dd PGT + 0x3
 %rep 1023
-dd 0b11001000000000000000000000000000 ;unused page
+dd 0
 %endrep
 
 align 4096
 PGT: 
-dd 0b11001000000000000000000000000000 ;kernel page
+dd 0b11000000000000000000000000000000 ;kernel page
 %rep 1023 
-dd 0b11001000000000000000000000000000 ;unused page
+dd 0
 %endrep
 
 EnablePaging:
 mov eax,PGD
-or eax,PGT
-mov [PGD],eax
-mov eax,PGD
 mov cr3,eax
 mov eax,cr0
-or eax,0x80000001
+or eax,0x80000000
 mov cr0,eax
 ret
