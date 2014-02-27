@@ -15,9 +15,11 @@ dd 0
 
 align 4096
 PGT: 
-dd 0b11000000000000000000000000000000 ;kernel page
-%rep 1023 
-dd 0
+%assign i 1
+dd 0x3
+%rep 1024
+dd i*0x1000 + 0x3 ;kernel page
+%assign i i+1
 %endrep
 
 EnablePaging:
@@ -26,4 +28,5 @@ mov cr3,eax
 mov eax,cr0
 or eax,0x80000000
 mov cr0,eax
+xchg bx,bx
 ret

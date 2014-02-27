@@ -19,7 +19,7 @@ This is the bulk of the kernel.
 /*
 
 0x00007C00-0x00007E00 - Bootloader/Bootloader Data (including GDT)
-0x00002000-0x00010000 - Kernel/Kernel Data (8K, not yet all used)
+0x00002000-0x00010000 - Kernel/Kernel Data (32K, not yet all used)
 0x00010000-0x00020000 - Kernel Stack (64K)
 
 */
@@ -55,7 +55,6 @@ int promptLine = 24;
 //Entry Point
 int main(void)
 {		
-	__asm__ volatile("xchg bx,bx");
 	//Enable Paging
 	EnablePaging();
 	
