@@ -25,6 +25,7 @@ static void setIDT(uint8_t idx, uint32_t base, uint16_t selector, uint8_t flags)
 
 void generateIDT()
 { 
+	__asm__ volatile ("xchg bx,bx");
 	ISR[0] = (uint32_t)&ISR0;
 	ISR[1] = (uint32_t)&ISR1;
 	ISR[2] = (uint32_t)&ISR2; //cascade

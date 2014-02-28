@@ -10,25 +10,28 @@
 ;
 [BITS 16]
 [ORG 0x7C00]
+jmp boot
 
-begin:
+OEM_ID db "CATAPULT"
+
+boot:
 cli
+mov ax,0xFFFF
+mov ss,ax
+mov sp,0xFFFF
 mov ax,0x0000
 mov ds,ax
 mov es,ax
 mov si,Banner
 call putString
 
-xchg bx,bx
-
+mov cx,11d
 mov bx,0x2000
 mov ax,0x02;
-%rep 29;Sector Count
 call readFloppy
-%endrep
 
-;mov si,Done
-;call putString
+mov si,Done
+call putString
 
 cli
 mov eax,cr0
@@ -46,7 +49,7 @@ mov ss,bx
 mov es,bx
 mov fs,bx
 mov gs,bx
-mov esp,0x20000 ;Kernel Stack
+mov esp,0x40000 ;Kernel Stack
 jmp 0x2000
 
 [BITS 16]
@@ -70,6 +73,12 @@ ret
 ;ax is absolute sector number to read, es:bx points to buffer to read to
 ;auto-increments buffer and ax
 readFloppy:
+.begin:
+dec cx
+cmp cx,0
+jne .continue
+ret
+.continue:
 push ax
 push bx
 push cx
@@ -79,13 +88,19 @@ mov al,0x01
 mov ch,byte [cyl]
 mov cl,byte [sec]
 mov dh,byte [hea]
-mov dl,0;drive 0
+mov dl,0x00;drive
 int 0x13
+jnc .success
+xor ax,ax
+int 0x13 ;reset drive
+jmp .continue ;retry
+.success:
 pop cx
 pop bx
 pop ax
 add bx,0x200
 inc ax
+loop .begin ;keep reading sectors until done
 ret
 
 ;ax = LBA in, cyl/hea/sec out, trashes dx
@@ -100,7 +115,6 @@ mov byte [hea],dl
 mov byte [cyl],al
 ret
 
-align 4
 GDT_ADDR: dw 0
 GDT: dw GDT_END - GDT_ADDR - 1
 dd GDT_ADDR
@@ -113,10 +127,9 @@ dw 0xFFFF,0x0000 ;0x10
 dw 0x9300,0x00CF ;0x10 flags
 GDT_END:
 
-
-cyl db 0x0
-hea db 0x0
-sec db 0x0
+cyl db 0x00
+hea db 0x00
+sec db 0x00
 
 hc dw 0x0002
 spt dw 0x0012 ;18d

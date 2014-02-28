@@ -13,14 +13,14 @@ This is the bulk of the kernel.
 #include "kernel.h"
 #include "commands.h"
 #include "idt.h"
-#include "page.h"
+//#include "page.h"
 
 //Kernel Memory Map
 /*
 
 0x00007C00-0x00007E00 - Bootloader/Bootloader Data (including GDT)
-0x00002000-0x00010000 - Kernel/Kernel Data (32K, not yet all used)
-0x00010000-0x00020000 - Kernel Stack (64K)
+0x00002000-0x00020000 - Kernel/Kernel Data (64K, not yet all used)
+0x00020000-0x00040000 - Kernel Stack (64K)
 
 */
 
@@ -55,7 +55,6 @@ int promptLine = 24;
 //Entry Point
 int main(void)
 {		
-	__asm__ volatile("sti");
 	//Enable Paging
 	//EnablePaging();
 	
