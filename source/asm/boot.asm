@@ -12,26 +12,23 @@
 [ORG 0x7C00]
 
 begin:
+cli
 mov ax,0x0000
 mov ds,ax
+mov es,ax
 mov si,Banner
 call putString
 
-mov es,ax
-mov bx,0x2000
+xchg bx,bx
 
-mov ch,0x00
-mov cl,0x02
-mov dh,0x00
+mov bx,0x2000
+mov ax,0x02;
+%rep 29;Sector Count
 call readFloppy
-%rep 16;+1 Sectors
-call readNext
 %endrep
-mov dh,0x01
-mov cl,0x01
-%rep 17;+18+1 Sectors
-call readNext
-%endrep
+
+;mov si,Done
+;call putString
 
 cli
 mov eax,cr0
@@ -63,25 +60,44 @@ mov bl,0x07
 lodsb
 or al,al
 jz .return
-int 10h
+int 0x10
 jmp .nextChar
 .return:
 pop bx
 pop ax
 ret
 
-readNext:
-add bx,0x200
-inc cl
-call readFloppy
-ret
-
-;ch track# cl sec# dh head# - es:bx points to buffer to read to
+;ax is absolute sector number to read, es:bx points to buffer to read to
+;auto-increments buffer and ax
 readFloppy:
+push ax
+push bx
+push cx
+call LBAtoCHS
 mov ah,0x02
 mov al,0x01
-mov dl,0x00
-int 13h
+mov ch,byte [cyl]
+mov cl,byte [sec]
+mov dh,byte [hea]
+mov dl,0;drive 0
+int 0x13
+pop cx
+pop bx
+pop ax
+add bx,0x200
+inc ax
+ret
+
+;ax = LBA in, cyl/hea/sec out, trashes dx
+LBAtoCHS:
+xor dx,dx
+div word [spt]
+inc dl
+mov byte [sec],dl
+xor dx,dx
+div word [hc]
+mov byte [hea],dl
+mov byte [cyl],al
 ret
 
 align 4
@@ -97,6 +113,15 @@ dw 0xFFFF,0x0000 ;0x10
 dw 0x9300,0x00CF ;0x10 flags
 GDT_END:
 
+
+cyl db 0x0
+hea db 0x0
+sec db 0x0
+
+hc dw 0x0002
+spt dw 0x0012 ;18d
+
+Done db 'Kernel Loaded',13,10,0
 Banner db 'Catapult Bootloader',13,10,'Copyright Yushatak 2014',13,10,'All Rights Reserved',13,10,0
 
 times 510-($-$$) db 0

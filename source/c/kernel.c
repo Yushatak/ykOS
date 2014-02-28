@@ -55,8 +55,9 @@ int promptLine = 24;
 //Entry Point
 int main(void)
 {		
+	__asm__ volatile("sti");
 	//Enable Paging
-	EnablePaging();
+	//EnablePaging();
 	
 	//Remap PIC IRQ Table 0->32
 	outb(0x20, 0x11);
