@@ -2,9 +2,7 @@
 rem Build Script (build.bat)
 rem Part of the ykOS Project
 rem Written by J. "Yushatak" S.
-
 rem Copyright Yushatak 2014
-
 rem All Rights Reserved
 rem
 echo Building ykOS
@@ -19,9 +17,10 @@ mkdir out
 echo =Placing Empty Floppy Image...
 copy build\vflopBLANK.img out\vflop.img /y
 echo =Assembling .ASM Files...
-nasm source\asm\boot.asm -o out\boot
+nasm source\asm\boot.asm -O0 -o out\boot
 nasm source\asm\isr.asm -f ELF -o obj\isr.o
 nasm source\asm\kstub.asm -f ELF -o obj\kstub.o
+rem nasm source\asm\multiboot.asm -f ELF -o obj\multiboot.o
 rem nasm source\asm\pgd.asm -f ELF -o obj\pgd.o
 echo =Compiling Kernel...
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -masm=intel -c source/c/kernel.c -o obj/kernel.o
@@ -31,7 +30,7 @@ echo =Linking Kernel...
 i486-elf-ld --relax -static -n -T build/kernel.ld
 echo =Finalizing Kernel...
 i486-elf-objcopy obj/kernel.elf --only-keep-debug out/kernel.sym
-i486-elf-objcopy obj/kernel.elf --set-start 0x2000 -O binary out/kernel
+i486-elf-objcopy obj/kernel.elf --set-start 0x4000 -O binary out/kernel
 copy obj\kernel.elf out\kernel.elf /y
 echo =Building Floppy Image...
 dd if=out\boot bs=512 of=out\vflop.img

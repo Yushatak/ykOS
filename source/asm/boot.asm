@@ -16,14 +16,18 @@ OEM_ID db "CATAPULT"
 
 boot:
 cli
-mov ax,0xFFFF
-mov ss,ax
-mov sp,0xFFFF
+mov ax,STACK_END
+mov sp,ax
 mov ax,0x0000
+mov ss,ax
 mov ds,ax
 mov es,ax
 mov si,Banner
 call putString
+
+in ax,0x70
+or ax,0x80
+out 0x70,ax
 
 mov cx,11d
 mov bx,0x2000
@@ -33,7 +37,9 @@ call readFloppy
 mov si,Done
 call putString
 
-cli
+in al,0x92
+or al,2
+out 0x92,al ;Enable A20 (PS/2+)
 mov eax,cr0
 lgdt [cs:GDT]
 or al,1
@@ -43,14 +49,14 @@ jmp 0x08:.main32
 
 [BITS 32]
 .main32:
-mov bx,0x10 ;Data Selector
+mov ebx,0x10 ;Data Selector
 mov ds,bx
 mov ss,bx 
 mov es,bx
 mov fs,bx
 mov gs,bx
-mov esp,0x40000 ;Kernel Stack
-jmp 0x2000
+mov esp,0xA0000 ;Kernel Stack
+jmp 0x08:0x2000
 
 [BITS 16]
 putString:
@@ -138,4 +144,4 @@ Done db 'Kernel Loaded',13,10,0
 Banner db 'Catapult Bootloader',13,10,'Copyright Yushatak 2014',13,10,'All Rights Reserved',13,10,0
 
 times 510-($-$$) db 0
-dw 0xAA55
+STACK_END dw 0xAA55
