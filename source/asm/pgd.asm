@@ -5,20 +5,19 @@
 ;All Rights Reserved
 ;
 global EnablePaging
-
+;Directory
 align 4096
 PGD:
-dd PGT + 0x3
+dd PGT + 0x3 ;Entry Pointing To Table
 %rep 1023
 dd 0
 %endrep
-
+;Table
 align 4096
 PGT: 
-%assign i 1
-dd 0x3
+%assign i 0
 %rep 1024
-dd i*0x1000 + 0x3 ;kernel page
+dd i*0x1000 + 0x3 ;Kernel Page, Identity Mapped Sequential Pages
 %assign i i+1
 %endrep
 

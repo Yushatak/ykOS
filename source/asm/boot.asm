@@ -16,18 +16,13 @@ OEM_ID db "CATAPULT"
 
 boot:
 cli
-mov ax,STACK_END
-mov sp,ax
 mov ax,0x0000
 mov ss,ax
+mov sp,0x9F00
 mov ds,ax
 mov es,ax
 mov si,Banner
 call putString
-
-in ax,0x70
-or ax,0x80
-out 0x70,ax
 
 mov cx,11d
 mov bx,0x2000
@@ -55,7 +50,6 @@ mov ss,bx
 mov es,bx
 mov fs,bx
 mov gs,bx
-mov esp,0xA0000 ;Kernel Stack
 jmp 0x08:0x2000
 
 [BITS 16]
@@ -80,21 +74,20 @@ ret
 ;auto-increments buffer and ax
 readFloppy:
 .begin:
+test cx,cx
+jz .end
 dec cx
-cmp cx,0
-jne .continue
-ret
 .continue:
 push ax
 push bx
 push cx
 call LBAtoCHS
-mov ah,0x02
+mov ah,0x0A
 mov al,0x01
 mov ch,byte [cyl]
 mov cl,byte [sec]
 mov dh,byte [hea]
-mov dl,0x00;drive
+mov dl,0x80;drive
 int 0x13
 jnc .success
 xor ax,ax
@@ -106,7 +99,8 @@ pop bx
 pop ax
 add bx,0x200
 inc ax
-loop .begin ;keep reading sectors until done
+jmp .begin ;keep reading sectors until done
+.end:
 ret
 
 ;ax = LBA in, cyl/hea/sec out, trashes dx

@@ -11,9 +11,9 @@ This is the bulk of the kernel.
 #include <stdbool.h>
 #include <stddef.h>
 #include "kernel.h"
-#include "commands.h"
+#include "memory.h"
 #include "idt.h"
-//#include "page.h"
+#include "commands.h"
 
 //Kernel Memory Map
 /*
@@ -55,8 +55,11 @@ int promptLine = 24;
 //Entry Point
 int main(void)
 {		
-	//Enable Paging
-	//EnablePaging();
+	//__asm__ volatile ("xchg bx,bx");
+	//Memory Setup
+	A20();
+	LinearGDT();
+	EnablePaging();
 	
 	//Remap PIC IRQ Table 0->32
 	outb(0x20, 0x11);
@@ -222,6 +225,11 @@ void KeyboardHandler(isr_registers_t* regs)
 		SetCursor(sizeof(prompt) - 1 + keybuffer_ptr, promptLine);
 	}
 	//else it's an unhandled scancode.
+}
+
+void PageFaultHandler(isr_registers_t* regs)
+{
+	Output("Page Fault!\n");
 }
 
 bool StringCompare(char* buffer1, char* buffer2)
