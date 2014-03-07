@@ -15,15 +15,6 @@ This is the bulk of the kernel.
 #include "idt.h"
 #include "commands.h"
 
-//Kernel Memory Map
-/*
-
-0x00007C00-0x00007E00 - Bootloader/Bootloader Data (including GDT)
-0x00002000-0x00020000 - Kernel/Kernel Data (64K, not yet all used)
-0x00020000-0x00040000 - Kernel Stack (64K)
-
-*/
-
 //String Declarations
 char message[] = "32-Bit Kernel Loaded";
 char prompt[] = "ykOS>";
@@ -59,7 +50,7 @@ int main(void)
 	//Memory Setup
 	A20();
 	LinearGDT();
-	EnablePaging();
+	//EnablePaging();
 	
 	//Remap PIC IRQ Table 0->32
 	outb(0x20, 0x11);
@@ -77,6 +68,7 @@ int main(void)
 	generateIDT();
 	ClearScreen();
 	registerISR(0x21, &KeyboardHandler);
+	//registerISR(0x0E, &PageFaultHandler);
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);
 	

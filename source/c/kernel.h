@@ -182,3 +182,4 @@ uint8_t inb(uint16_t port);
 
 //Handlers
 void KeyboardHandler(isr_registers_t* regs);
+void PageFaultHandler(isr_registers_t* regs);
