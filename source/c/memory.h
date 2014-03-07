@@ -9,4 +9,4 @@ This contains declarations for the functions to set up and manipulate memory acc
 */
 extern void A20();
 extern void LinearGDT();
-extern void EnablePaging();
+//extern void EnablePaging();

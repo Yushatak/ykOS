@@ -8,9 +8,8 @@ global EnablePaging
 ;Directory
 align 4096
 PGD:
-dd PGT + 0x3 ;Entry Pointing To Table
 %rep 1023
-dd 0
+dd PGT + 0x3 ;Entry Pointing To Table
 %endrep
 ;Table
 align 4096

@@ -1,7 +1,7 @@
 STARTUP(obj/kstub.o)
 /*ASM*/
 INPUT(obj/multiboot.o)
-INPUT(obj/pgd.o)
+/*INPUT(obj/pgd.o)*/
 INPUT(obj/a20.o)
 INPUT(obj/gdt.o)
 INPUT(obj/isr.o)

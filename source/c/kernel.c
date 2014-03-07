@@ -46,10 +46,10 @@ int promptLine = 24;
 //Entry Point
 int main(void)
 {		
-	//__asm__ volatile ("xchg bx,bx");
 	//Memory Setup
 	A20();
 	LinearGDT();
+	
 	//EnablePaging();
 	
 	//Remap PIC IRQ Table 0->32
@@ -68,7 +68,7 @@ int main(void)
 	generateIDT();
 	ClearScreen();
 	registerISR(0x21, &KeyboardHandler);
-	//registerISR(0x0E, &PageFaultHandler);
+	registerISR(0x0E, &PageFaultHandler);
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);
 	
