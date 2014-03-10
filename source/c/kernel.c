@@ -49,8 +49,7 @@ int main(void)
 	//Memory Setup
 	A20();
 	LinearGDT();
-	
-	//EnablePaging();
+	EnablePaging();
 	
 	//Remap PIC IRQ Table 0->32
 	outb(0x20, 0x11);
@@ -140,6 +139,10 @@ void CommandParser()
 		SetCursor(sizeof(prompt) - 1, promptLine);
 		CursorX = 0;
 	}
+	else if (StringCompare(cmdbuffer, "creg"))
+	{
+		cmd_Creg();
+	}
 	else 
 	{
 		Output("Invalid Command.\n");
@@ -221,7 +224,101 @@ void KeyboardHandler(isr_registers_t* regs)
 
 void PageFaultHandler(isr_registers_t* regs)
 {
-	Output("Page Fault!\n");
+	Output("\n\nPage Fault!\n\n");
+	DumpRegisters(regs);
+	//TODO: Dynamically add page so that when it returns to the same spot, it
+	//doesn't fault again, and remove the below halt/loop.
+	Output("\n\nHalting...");
+	__asm__ volatile("hlt");
+	for (;;);
+}
+
+void DumpRegisters(isr_registers_t* regs)
+{
+	char temp[32] = {0};
+	Output("EIP: 0x");
+	intToChars(regs->eip, temp);
+	Output(temp);
+	Output("\nCR0: 0x");
+	ClearString(temp, 32);
+	intToChars(get_cr0(), temp);
+	Output(temp);
+	Output(" | CR2: 0x");
+	ClearString(temp, 32);
+	intToChars(get_cr2(), temp);
+	Output(temp);
+	Output(" | CR3: 0x");
+	ClearString(temp, 32);
+	intToChars(get_cr3(), temp);
+	Output(temp);
+	Output(" | CR4: 0x");
+	ClearString(temp, 32);
+	intToChars(get_cr4(), temp);
+	Output(temp);
+	Output("\nESP: 0x");
+	ClearString(temp, 32);
+	intToChars(regs->esp, temp);
+	Output(temp);
+	Output(" | EBP: 0x");
+	ClearString(temp, 32);
+	intToChars(regs->ebp, temp);
+	Output(temp);
+	Output(" | EDI: 0x");
+	ClearString(temp, 32);
+	intToChars(regs->edi, temp);
+	Output(temp);
+	Output(" | ESI: 0x");
+	ClearString(temp, 32);
+	intToChars(regs->esi, temp);
+	Output(temp);
+	Output("\nEAX: 0x");
+	ClearString(temp, 32);
+	intToChars(regs->eax, temp);
+	Output(temp);
+	Output(" | EBX: 0x");
+	ClearString(temp, 32);
+	intToChars(regs->ebx, temp);
+	Output(temp);
+	Output(" | ECX: 0x");
+	ClearString(temp, 32);
+	intToChars(regs->ecx, temp);
+	Output(temp);
+	Output(" | EDX: 0x");
+	ClearString(temp, 32);
+	intToChars(regs->edx, temp);
+	Output(temp);
+	Output("\nDS: 0x");
+	ClearString(temp, 32);
+	intToChars(regs->ds, temp);
+	Output(temp);
+	Output(" | ES: 0x");
+	ClearString(temp, 32);
+	intToChars(regs->es, temp);
+	Output(temp);
+	Output(" | FS: 0x");
+	ClearString(temp, 32);
+	intToChars(regs->fs, temp);
+	Output(temp);
+	Output(" | GS: 0x");
+	ClearString(temp, 32);
+	intToChars(regs->gs, temp);
+	Output(temp);
+	Output("\nSS: 0x");
+	ClearString(temp, 32);
+	intToChars(regs->ss, temp);
+	Output(temp);
+	Output("\nEFLAGS: 0x");
+	ClearString(temp, 32);
+	intToChars(regs->eflags, temp);
+	Output(temp);
+}
+
+void ClearString(char* string, size_t length)
+{
+	for (int i = 0; i < length; i++)
+	{
+		string[i] = 0;
+	}
 }
 
 bool StringCompare(char* buffer1, char* buffer2)
@@ -530,3 +627,38 @@ inline uint8_t inb(uint16_t port)
 	__asm__ volatile ("inb %0, %1" : "=a"(ret) : "Nd"(port));
 	return ret;
 }
+
+inline uint32_t get_cr0()
+{
+	uint32_t ret = 0;
+	__asm__ volatile ("mov %0, cr0" : "=a"(ret));
+	return ret;
+}
+
+inline uint32_t get_cr2()
+{
+	uint32_t ret = 0;
+	__asm__ volatile ("mov %0, cr2" : "=a"(ret));
+	return ret;
+}
+	
+inline uint32_t get_cr3()
+{
+	uint32_t ret = 0;
+	__asm__ volatile ("mov %0, cr3" : "=a"(ret));
+	return ret;
+}
+	
+inline uint32_t get_cr4()
+{
+	uint32_t ret = 0;
+	__asm__ volatile ("mov %0, cr4" : "=a"(ret));
+	return ret;
+}
+	
+/*inline uint64_t get_cr8()
+{
+	uint64_t ret = 0;
+	__asm__ volatile ("mov %0, cr8" : "=a"(ret));
+	return ret;
+}*/

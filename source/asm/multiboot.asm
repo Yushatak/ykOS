@@ -10,3 +10,17 @@ align 4
 dd cMagic
 dd cFlags
 dd cChecksum
+
+section .bss
+times 16384 db 0
+stack_start:
+
+section .text
+global kmain
+kmain:
+mov esp,stack_start
+extern main
+call main
+cli
+hlt
+jmp $

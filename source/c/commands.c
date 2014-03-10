@@ -27,3 +27,20 @@ void cmd_Peek(char* args, size_t argsize)
 	intToChars(*(uint32_t *)charsToInt(args), Chars);
 	Output(Chars);
 }
+
+void cmd_Creg(void)
+{
+	char Chars[32] = {0};
+	intToChars(get_cr0(), Chars);
+	Output("CR0: ");
+	Output(Chars);
+	intToChars(get_cr2(), Chars);
+	Output("\nCR2: ");
+	Output(Chars);
+	intToChars(get_cr3(), Chars);
+	Output("\nCR3: ");
+	Output(Chars);
+	intToChars(get_cr4(), Chars);
+	Output("\nCR4: ");
+	Output(Chars);
+}

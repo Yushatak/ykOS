@@ -10,9 +10,7 @@ mov ds,bx
 mov es,bx
 mov fs,bx
 mov gs,bx
-mov bx,0x18
-mov ss,bx
-mov esp,0x2FFFFE ;top of the stack
+;mov ss,bx
 ret
 
 GDT_ADDR: dw 0
@@ -25,8 +23,4 @@ dw 0xFFFF,0x0000 ;0x08, Universal Execution Segment
 db 0x00,0b10011010,0b11001111,0x00
 dw 0xFFFF,0x0000 ;0x10, Universal Data Segment
 db 0x00,0b10010010,0b11001111,0x00
-dw 0xFFFF,0x0000 ;0x18 Kernel Stack Segment
-db 0x20,0b10010010,0b01001111,0x00
-;dw 0xFFFF,0x0000 ;0x20, Universal Read-Only Data Segment
-;db 0x00,0b10010001,0b11001111,0x00
 GDT_END:

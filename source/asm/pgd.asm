@@ -8,9 +8,11 @@ global EnablePaging
 ;Directory
 align 4096
 PGD:
-%rep 1023
 dd PGT + 0x3 ;Entry Pointing To Table
+%rep 1022
+dd 0x0 ;Filler
 %endrep
+dd PGD + 0x3; Recursive Entry
 ;Table
 align 4096
 PGT: 
