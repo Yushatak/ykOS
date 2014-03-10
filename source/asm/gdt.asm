@@ -12,7 +12,7 @@ mov fs,bx
 mov gs,bx
 mov bx,0x18
 mov ss,bx
-mov esp,0x0 ;top of the stack
+mov esp,0x2FFFFE ;top of the stack
 ret
 
 GDT_ADDR: dw 0
