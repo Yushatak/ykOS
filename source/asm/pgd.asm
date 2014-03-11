@@ -4,7 +4,7 @@
 ;Copyright Yushatak 2014
 ;All Rights Reserved
 ;
-global EnablePaging
+global EnablePaging, PGD
 ;Directory
 align 4096
 PGD:

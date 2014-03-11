@@ -68,9 +68,11 @@ int main(void)
 	ClearScreen();
 	registerISR(0x21, &KeyboardHandler);
 	registerISR(0x0E, &PageFaultHandler);
+	//registerISR(0x30, &DumpRegisters);
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);
 	
+	//__asm__ volatile ("int 0x30");
 	//Loop forever until interrupted.
 	for(;;);
 }
@@ -122,15 +124,20 @@ void CommandParser()
 			break;
 		}
 	}
-	if (StartsWith(cmdbuffer, "peek"))
+	if (StartsWith(cmdbuffer, "peek "))
 	{
 		if (splitPos == 0) Output("Invalid Argument(s).\n");
 		else cmd_Peek(splitPos, (keybuffer_size - (int)splitPos) + keybuffer_ptr);
 	}
-	else if (StartsWith(cmdbuffer, "convert"))
+	else if (StartsWith(cmdbuffer, "convert "))
 	{
 		if (splitPos == 0) Output("Invalid Argument(s).\n");
 		else cmd_Convert(splitPos);
+	}
+	else if (StartsWith(cmdbuffer, "page "))
+	{
+		if (splitPos == 0) Output("Invalid Argument(s).\n");
+		else cmd_Page(splitPos);
 	}
 	else if (StringCompare(cmdbuffer, "clear") || StringCompare(cmdbuffer, "cls"))
 	{
@@ -143,6 +150,10 @@ void CommandParser()
 	{
 		cmd_Creg();
 	}
+	/*else if (StringCompare(cmdbuffer, "dump"))
+	{
+		__asm__ volatile ("int 0x30");
+	}*/
 	else 
 	{
 		Output("Invalid Command.\n");
@@ -236,7 +247,13 @@ void PageFaultHandler(isr_registers_t* regs)
 void DumpRegisters(isr_registers_t* regs)
 {
 	char temp[32] = {0};
-	Output("EIP: 0x");
+	Output("INT: 0x");
+	intToChars(regs->intvec, temp);
+	Output(" | Error Code: 0x");
+	ClearString(temp, 32);
+	intToChars(regs->ec, temp);
+	Output("\nEIP: 0x");
+	ClearString(temp, 32);
 	intToChars(regs->eip, temp);
 	Output(temp);
 	Output("\nCR0: 0x");
@@ -287,7 +304,15 @@ void DumpRegisters(isr_registers_t* regs)
 	ClearString(temp, 32);
 	intToChars(regs->edx, temp);
 	Output(temp);
-	Output("\nDS: 0x");
+	Output("\nSS: 0x");
+	ClearString(temp, 32);
+	intToChars(regs->ss, temp);
+	Output(temp);
+	Output(" | CS: 0x");
+	ClearString(temp, 32);
+	intToChars(regs->cs, temp);
+	Output(temp);
+	Output(" | DS: 0x");
 	ClearString(temp, 32);
 	intToChars(regs->ds, temp);
 	Output(temp);
@@ -302,10 +327,6 @@ void DumpRegisters(isr_registers_t* regs)
 	Output(" | GS: 0x");
 	ClearString(temp, 32);
 	intToChars(regs->gs, temp);
-	Output(temp);
-	Output("\nSS: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->ss, temp);
 	Output(temp);
 	Output("\nEFLAGS: 0x");
 	ClearString(temp, 32);

@@ -8,6 +8,7 @@ INPUT(obj/isr.o)
 INPUT(obj/kernel.o)
 INPUT(obj/idt.o)
 INPUT(obj/commands.o)
+INPUT(obj/memory.o)
 SECTIONS
 {
 	. = 0x100000;

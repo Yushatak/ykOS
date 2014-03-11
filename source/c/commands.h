@@ -14,3 +14,4 @@ shell.
 void cmd_Peek(char* args, size_t argsize);
 void cmd_Convert(char* args);
 void cmd_Creg(void);
+void cmd_Page(char* args);

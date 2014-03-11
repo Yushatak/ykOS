@@ -9,8 +9,11 @@ This contains the code for individual built-in command applets in the kernel she
 */
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include "kernel.h"
 #include "commands.h"
+#include "memory.h"
+extern void crashprep();
 
 void cmd_Convert(char* args)
 {
@@ -42,5 +45,26 @@ void cmd_Creg(void)
 	Output(Chars);
 	intToChars(get_cr4(), Chars);
 	Output("\nCR4: ");
+	Output(Chars);
+}
+
+void cmd_Page(char* args)
+{
+	char Chars[32] = {0};	
+	Output("Page Entry [");
+	int address = charsToInt(args);
+	intToChars((get_cr3() & (~0xFFF)), Chars);
+	Output(Chars);
+	ClearString(Chars, 32);
+	Output(":");
+	intToChars(address/4096, Chars); //Which Page
+	Output(Chars);
+	Output("]:");
+	ClearString(Chars, 32);
+	intToChars(address%4096, Chars); //Where In Page
+	Output(Chars);
+	Output(":");
+	ClearString(Chars, 32);
+	intToChars(GetPageEntryA(charsToInt(args)), Chars);
 	Output(Chars);
 }
