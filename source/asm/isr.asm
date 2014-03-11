@@ -14,6 +14,7 @@ extern Interrupt
 
 ISR:
 pushad
+push ss
 push ds
 push es
 push fs
@@ -30,6 +31,7 @@ pop gs
 pop fs
 pop es
 pop ds
+pop ss
 popad
 add esp,8
 iret

@@ -247,7 +247,11 @@ void PageFaultHandler(isr_registers_t* regs)
 void DumpRegisters(isr_registers_t* regs)
 {
 	char temp[32] = {0};
-	Output("INT: 0x");
+	Output("Register Structure: 0x");
+	intToChars((uint32_t)&regs, temp);
+	Output(temp);
+	ClearString(temp, 32);
+	Output("\nINT: 0x");
 	intToChars(regs->intvec, temp);
 	Output(" | Error Code: 0x");
 	ClearString(temp, 32);

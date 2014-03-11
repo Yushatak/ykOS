@@ -24,10 +24,10 @@ typedef struct idt_entry_struct idt_entry_t;
 
 typedef struct isr_registers
 {
-	uint32_t ds, es, fs, gs;
+	uint32_t ss, ds, es, fs, gs;
 	uint32_t edi, esi, ebp, useless_esp, ebx, edx, ecx, eax;
 	uint32_t intvec, ec;
-	uint32_t eip, cs, eflags, esp, ss;
+	uint32_t eip, cs, eflags, esp, fake_ss;
 } isr_registers_t;
 
 typedef void (*isr_t)(isr_registers_t*);
