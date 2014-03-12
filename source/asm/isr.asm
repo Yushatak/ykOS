@@ -14,6 +14,8 @@ extern Interrupt
 
 ISR:
 pushad
+push esp
+push ss
 push ds
 push es
 push fs
@@ -30,6 +32,8 @@ pop gs
 pop fs
 pop es
 pop ds
+pop ss
+pop esp
 popad
 add esp,8
 iret
@@ -37,7 +41,6 @@ iret
 %macro ISR_NOEC 1
 global ISR%1
 ISR%1:
-cli
 push byte 0
 push byte %1
 jmp ISR
@@ -46,7 +49,6 @@ jmp ISR
 %macro ISR_EC 1
 global ISR%1
 ISR%1:
-cli
 push byte %1
 jmp ISR
 %endmacro
@@ -54,12 +56,10 @@ jmp ISR
 %macro IRQ 2
 global IRQ%2
 IRQ%2:
-cli
 push byte 0
 push byte %1
 jmp ISR
 %endmacro
-
 
 ISR_NOEC 0 ;0x00
 ISR_NOEC 1 ;0x01
@@ -124,9 +124,9 @@ ISR7:
 .realIRQ7:
 	cli
         pop eax
+	push byte 0
         push 0x07
         jmp ISR
- 
  
 ISR15:
         push eax
@@ -144,5 +144,6 @@ ISR15:
 .realIRQ15:
 	cli
         pop eax
+	push byte 0
         push 0x0F
         jmp ISR

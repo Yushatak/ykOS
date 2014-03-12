@@ -1,9 +1,9 @@
 STARTUP(obj/kstub.o)
 /*ASM*/
-INPUT(obj/pgd.o)
 INPUT(obj/a20.o)
 INPUT(obj/gdt.o)
 INPUT(obj/isr.o)
+INPUT(obj/end.o)
 /*C*/
 INPUT(obj/kernel.o)
 INPUT(obj/idt.o)
@@ -26,6 +26,9 @@ SECTIONS
 		*(COMMON)
 		*(.bss)
 		*(.stack)
+	}
+	.end : {
+		*(.end)
 	}
 }
 OUTPUT(obj/kernel.elf)

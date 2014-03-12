@@ -24,14 +24,21 @@ typedef struct idt_entry_struct idt_entry_t;
 
 typedef struct isr_registers
 {
-	uint32_t ds, es, fs, gs;
+	uint32_t gs, fs, es, ds, ss, esp;
 	uint32_t edi, esi, ebp, useless_esp, ebx, edx, ecx, eax;
 	uint32_t intvec, ec;
-	uint32_t eip, cs, eflags, esp, ss;
+	uint32_t eip, cs, eflags, intermittent_esp, intermittent_ss;
 } isr_registers_t;
 
 typedef void (*isr_t)(isr_registers_t*);
 void registerISR(uint8_t idx, isr_t ISR);
+
+typedef struct mbi
+{
+	uint32_t ignore_me;
+	uint32_t mem_lower;
+	uint32_t mem_upper;
+} mbi_t;
 
 static const char keycode[128] =
 {

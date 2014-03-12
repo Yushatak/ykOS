@@ -13,7 +13,6 @@ This contains the code for individual built-in command applets in the kernel she
 #include "kernel.h"
 #include "commands.h"
 #include "memory.h"
-extern void crashprep();
 
 void cmd_Convert(char* args)
 {
@@ -65,6 +64,7 @@ void cmd_Page(char* args)
 	Output(Chars);
 	Output(":");
 	ClearString(Chars, 32);
-	intToChars(GetPageEntryA(charsToInt(args)), Chars);
+	intToChars(GetEntry(charsToInt(args)) & (~0x07), Chars);
 	Output(Chars);
+	ClearString(Chars, 32);
 }

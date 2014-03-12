@@ -10,7 +10,7 @@ This contains declarations for the functions to set up and manipulate memory acc
 //External Functions
 extern void A20();
 extern void LinearGDT();
-extern void EnablePaging();
+extern void enablePaging();
 
 //Structs
 typedef struct page_table
@@ -25,3 +25,7 @@ void PutPageEntryA(int address, uint32_t entry);
 uint32_t GetPageEntryA(int address);
 uint32_t GetPageA(int address);
 uint32_t GetEntryA(int address);
+void EnablePaging();
+uint32_t GetEntry(int address);
+void SetEntry(int address, uint32_t value);
+void EnableTable(int address);

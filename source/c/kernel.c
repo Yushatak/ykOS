@@ -43,6 +43,9 @@ bool ctrl = false;
 bool alt = false;
 int promptLine = 24;
 
+//Externs
+extern void* kernel_end;
+
 //Entry Point
 int main(void)
 {		
@@ -72,7 +75,6 @@ int main(void)
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);
 	
-	//__asm__ volatile ("int 0x30");
 	//Loop forever until interrupted.
 	for(;;);
 }
@@ -239,6 +241,22 @@ void PageFaultHandler(isr_registers_t* regs)
 	DumpRegisters(regs);
 	//TODO: Dynamically add page so that when it returns to the same spot, it
 	//doesn't fault again, and remove the below halt/loop.
+	//Output("\n\nAllocating fake page to continue...");
+	//int address = get_cr2();
+	//SetEntry(address, GetEntry(0x100000));
+	//EnableTable(address);
+	//__asm__ volatile ("invlpg [%0]" :: "a"(address));
+	//__asm__ volatile ("mov cr3, %0" :: "b"(get_cr3()));
+	/*char temp[32] = {0};
+	int page = GetPageA(address);
+	if (GetPageEntry((void*)(get_cr3() & (~0xFFF)), page) > 0)
+	{
+		if (GetEntryA(get_cr2() == 0)
+		{
+			PutPageEntry((void*)(get_cr3() & (~0xFFF)), page, GetPageEntry((void*)(get_cr3() & (~0xFFF)), 0));
+		}
+	}*/
+	//PutPageEntryA(get_cr2(), get_cr2() | 0x3);
 	Output("\n\nHalting...");
 	__asm__ volatile("hlt");
 	for (;;);
@@ -248,14 +266,16 @@ void DumpRegisters(isr_registers_t* regs)
 {
 	char temp[32] = {0};
 	Output("Register Structure: 0x");
-	intToChars((uint32_t)&regs, temp);
+	intToChars((uint32_t)regs, temp);
 	Output(temp);
 	ClearString(temp, 32);
 	Output("\nINT: 0x");
 	intToChars(regs->intvec, temp);
+	Output(temp);
 	Output(" | Error Code: 0x");
 	ClearString(temp, 32);
 	intToChars(regs->ec, temp);
+	Output(temp);
 	Output("\nEIP: 0x");
 	ClearString(temp, 32);
 	intToChars(regs->eip, temp);

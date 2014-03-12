@@ -19,9 +19,10 @@ copy build\skeleton.img out\ykOS.img /y
 echo =Assembling .ASM Files...
 nasm source\asm\isr.asm -f ELF -o obj\isr.o 
 nasm source\asm\kstub.asm -f ELF -o obj\kstub.o
-nasm source\asm\pgd.asm -f ELF -o obj\pgd.o
+rem nasm source\asm\pgd.asm -f ELF -o obj\pgd.o
 nasm source\asm\gdt.asm -f ELF -o obj\gdt.o
 nasm source\asm\a20.asm -f ELF -o obj\a20.o
+nasm source\asm\end.asm -f ELF -o obj\end.o
 echo =Compiling Kernel...
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -masm=intel -c source/c/kernel.c -o obj/kernel.o
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -masm=intel -m32 -c source/c/idt.c -o obj/idt.o
