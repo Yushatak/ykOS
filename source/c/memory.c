@@ -33,49 +33,20 @@ void EnablePaging()
 	__asm__ volatile ("mov cr0, %0" :: "b"(get_cr0() | 0x80000000));
 }
 
-uint32_t GetEntry(int address)
+uint32_t Get_ID_PTE(int address)
 {
-	return (uint32_t)(((page_table_t*)(PGD[address/4096] & (~0x7)))->entries[address/1024%4]);
+	uint32_t table_index = address/4096;
+	uint32_t page_index = address/1024%4;
+	page_table_t* PGT = (void*)(PGD[table_index] & 0xFFFFF000);
+	uint32_t ret = PGT->entries[page_index];
+	return ret;
+	//return (uint32_t)(((page_table_t*)(PGD[address/4096] & (~0xFFF)))->entries[address/1024%4]);
 }
 
-void SetEntry(int address, uint32_t value)
+void Set_ID_PTE(int address, uint32_t value)
 {
-	((page_table_t*)(PGD[address/4096] & (~0x7)))->entries[address/1024%4] = value;
-}
-
-uint32_t GetPageEntry(void* table, int index)
-{
-	return ((page_table_t*)table)->entries[index];
-}
-
-void PutPageEntry(void* table, int index, uint32_t entry)
-{
-	((page_table_t*)table)->entries[index] = entry;
-}
-
-void PutPageEntryA(int address, uint32_t entry)
-{
-	((page_table_t*)(((page_table_t*)(get_cr3() & (~0xFFF)))->entries[address/1024/4]))->entries[address/1024%4] = entry;
-}
-
-uint32_t GetPageA(int address)
-{
-	return ((page_table_t*)(get_cr3() & (~0xFFF)))->entries[address/4096] & (~0x7);
-}
-
-void EnableTable(int address)
-{
-	page_table_t* PGT = ((page_table_t*)(get_cr3() & (~0xFFF)));
-	PGT->entries[address/4096] &= (~0x7);
-	PGT->entries[address/4096] |= 0x3;
-}
-
-uint32_t GetEntryA(int address)
-{
-	return (uint32_t)(((page_table_t*)GetPageA(address))->entries[address/1024%4] & (~0x7));
-}
-
-uint32_t GetPageEntryA(int address)
-{
-	return (uint32_t)(((page_table_t*)(((page_table_t*)(get_cr3() & (~0xFFF)))->entries[address/4096] & (~0x7)))->entries[address/1024%4] & (~0x7));
+	uint32_t table_index = address/4096;
+	uint32_t page_index = address/1024%4;
+	page_table_t* PGT = (void*)(PGD[table_index] & 0xFFFFF000);
+	PGT->entries[page_index] = value;
 }

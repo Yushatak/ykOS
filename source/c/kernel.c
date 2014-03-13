@@ -239,9 +239,12 @@ void PageFaultHandler(isr_registers_t* regs)
 {
 	Output("\n\nPage Fault!\n\n");
 	DumpRegisters(regs);
+	Set_ID_PTE(get_cr2(), 0x3);
 	//TODO: Dynamically add page so that when it returns to the same spot, it
 	//doesn't fault again, and remove the below halt/loop.
 	//Output("\n\nAllocating fake page to continue...");
+	//PutPageEntryA(get_cr2(), 0x100000 | 0x3);
+	//EnableTable(get_cr2());
 	//int address = get_cr2();
 	//SetEntry(address, GetEntry(0x100000));
 	//EnableTable(address);
@@ -257,9 +260,9 @@ void PageFaultHandler(isr_registers_t* regs)
 		}
 	}*/
 	//PutPageEntryA(get_cr2(), get_cr2() | 0x3);
-	Output("\n\nHalting...");
-	__asm__ volatile("hlt");
-	for (;;);
+	//Output("\n\nHalting...");
+	//__asm__ volatile("hlt");
+	//for (;;);
 }
 
 void DumpRegisters(isr_registers_t* regs)

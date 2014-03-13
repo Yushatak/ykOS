@@ -52,19 +52,31 @@ void cmd_Page(char* args)
 	char Chars[32] = {0};	
 	Output("Page Entry [");
 	int address = charsToInt(args);
-	intToChars((get_cr3() & (~0xFFF)), Chars);
+	int table_index = address/4096;
+	int page_index = address/1024%4;
+	
+	intToChars((get_cr3() & 0xFFFFF000), Chars);
 	Output(Chars);
 	ClearString(Chars, 32);
+	if (table_index > 0x400 || page_index > 0x400)
+	{
+		Output("] Address out of range of identity mapping.");
+		return;
+	}
+	int entry = Get_ID_PTE(address);
 	Output(":");
 	intToChars(address/4096, Chars); //Which Page
 	Output(Chars);
 	Output("]:");
 	ClearString(Chars, 32);
-	intToChars(address%4096, Chars); //Where In Page
+	intToChars(address/1024%4, Chars); //Where In Page
 	Output(Chars);
 	Output(":");
-	ClearString(Chars, 32);
-	intToChars(GetEntry(charsToInt(args)) & (~0x07), Chars);
-	Output(Chars);
-	ClearString(Chars, 32);
+	if (entry == 0) Output("DISABLED");
+	else
+	{
+		ClearString(Chars, 32);
+		intToChars(entry & 0xFFFFF000, Chars);
+		Output(Chars);
+	}
 }
