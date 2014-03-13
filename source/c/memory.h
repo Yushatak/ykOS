@@ -22,3 +22,7 @@ typedef struct page_table
 void EnablePaging();
 uint32_t Get_ID_PTE(int address);
 void Set_ID_PTE(int address, uint32_t value);
+
+//Inline
+void invlpg(int address);
+void reload_cr3();

@@ -73,7 +73,7 @@ int main(void)
 	registerISR(0x0E, &PageFaultHandler);
 	//registerISR(0x30, &DumpRegisters);
 	OutputAt(prompt, 0, promptLine);
-	SetCursor(sizeof(prompt) - 1, promptLine);
+	SetCursor(sizeof(prompt) - 1, promptLine);	
 	
 	//Loop forever until interrupted.
 	for(;;);
@@ -151,6 +151,29 @@ void CommandParser()
 	else if (StringCompare(cmdbuffer, "creg"))
 	{
 		cmd_Creg();
+	}
+	else if (StringCompare(cmdbuffer, "pk"))
+	{
+		char temp[32] = {0};
+		intToChars(0xF000, temp);
+		Output("F0K:");
+		Output(temp);
+		Output(":");
+		char temp2[32] = {0};
+		intToChars(*(uint32_t *)charsToInt(temp), temp2);
+		Output(temp2);
+		ClearString(temp, 32);
+		ClearString(temp2, 32);
+		Output("\n100K:");
+		intToChars(0x100000, temp);
+		Output(temp);
+		Output(":");
+		intToChars(*(uint32_t *)charsToInt(temp), temp2);
+		Output(temp2);
+	}
+	else if (StringCompare(cmdbuffer, "map"))
+	{
+		Set_ID_PTE(0x0000F000, Get_ID_PTE(0x00100000));
 	}
 	/*else if (StringCompare(cmdbuffer, "dump"))
 	{
@@ -237,32 +260,22 @@ void KeyboardHandler(isr_registers_t* regs)
 
 void PageFaultHandler(isr_registers_t* regs)
 {
-	Output("\n\nPage Fault!\n\n");
+	Output("\n\nPage Fault At 0x");
+	char temp[32] = {0};
+	int address = get_cr2();
+	intToChars(address, temp);
+	Output(temp);
+	ClearString(temp, 32);
+	intToChars(Get_ID_PTE(address), temp);
+	Output(" (");
+	Output(temp);
+	Output(").\n\n");
 	DumpRegisters(regs);
-	Set_ID_PTE(get_cr2(), 0x3);
 	//TODO: Dynamically add page so that when it returns to the same spot, it
 	//doesn't fault again, and remove the below halt/loop.
-	//Output("\n\nAllocating fake page to continue...");
-	//PutPageEntryA(get_cr2(), 0x100000 | 0x3);
-	//EnableTable(get_cr2());
-	//int address = get_cr2();
-	//SetEntry(address, GetEntry(0x100000));
-	//EnableTable(address);
-	//__asm__ volatile ("invlpg [%0]" :: "a"(address));
-	//__asm__ volatile ("mov cr3, %0" :: "b"(get_cr3()));
-	/*char temp[32] = {0};
-	int page = GetPageA(address);
-	if (GetPageEntry((void*)(get_cr3() & (~0xFFF)), page) > 0)
-	{
-		if (GetEntryA(get_cr2() == 0)
-		{
-			PutPageEntry((void*)(get_cr3() & (~0xFFF)), page, GetPageEntry((void*)(get_cr3() & (~0xFFF)), 0));
-		}
-	}*/
-	//PutPageEntryA(get_cr2(), get_cr2() | 0x3);
-	//Output("\n\nHalting...");
-	//__asm__ volatile("hlt");
-	//for (;;);
+	Output("\n\nHalting...");
+	__asm__ volatile("hlt");
+	for (;;);
 }
 
 void DumpRegisters(isr_registers_t* regs)

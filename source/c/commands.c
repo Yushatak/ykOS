@@ -25,7 +25,7 @@ void cmd_Peek(char* args, size_t argsize)
 {
 	Output(args);
 	Output(":");
-	char Chars[16] = {0};
+	char Chars[32] = {0};
 	intToChars(*(uint32_t *)charsToInt(args), Chars);
 	Output(Chars);
 }
@@ -52,17 +52,17 @@ void cmd_Page(char* args)
 	char Chars[32] = {0};	
 	Output("Page Entry [");
 	int address = charsToInt(args);
-	int table_index = address/4096;
-	int page_index = address/1024%4;
+	//int table_index = address/4096;
+	//int page_index = address/1024%4;
 	
 	intToChars((get_cr3() & 0xFFFFF000), Chars);
 	Output(Chars);
 	ClearString(Chars, 32);
-	if (table_index > 0x400 || page_index > 0x400)
+	/*if (table_index > 0x400 || page_index > 0x400)
 	{
 		Output("] Address out of range of identity mapping.");
 		return;
-	}
+	}*/
 	int entry = Get_ID_PTE(address);
 	Output(":");
 	intToChars(address/4096, Chars); //Which Page
