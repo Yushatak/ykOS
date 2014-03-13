@@ -37,12 +37,12 @@ void EnablePaging()
 	__asm__ volatile ("mov cr0, %0" :: "b"(get_cr0() | 0x80000000));
 }
 
-uint32_t table_index(uint32_t vaddr)
+inline uint32_t table_index(uint32_t vaddr)
 {
 	return (vaddr/4096)/1024;
 }
 
-uint32_t page_index(uint32_t vaddr)
+inline uint32_t page_index(uint32_t vaddr)
 {
 	return (vaddr/4096)%1024;
 }
@@ -63,12 +63,12 @@ void Set_ID_PTE(uint32_t vaddr, uint32_t value)
 	reload_cr3();
 }
 
-inline void invlpg(int address)
+inline void invlpg(uint32_t vaddr)
 {
-	__asm__ volatile ("invlpg [%0]" :: "a"(address));
+	__asm__ volatile ("invlpg [%0]" :: "a"(vaddr));
 }
 
-void reload_cr3()
+inline void reload_cr3()
 {
 	__asm__ volatile ("mov cr3, %0" :: "b"(get_cr3()));
 }
