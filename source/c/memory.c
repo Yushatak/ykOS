@@ -25,7 +25,7 @@ void EnablePaging()
 	for (int i = 0; i < 1024; i++)
 	{
 		uint32_t* PGT = PGD + 1024 + (entry_size * i);
-		for (uint32_t i = 0; i < 1023; i++)
+		for (uint32_t i = 0; i < 1024; i++)
 		{
 			PGT[i] = address | 0x3; //Kernel Page
 			address += page_size;
@@ -37,22 +37,25 @@ void EnablePaging()
 	__asm__ volatile ("mov cr0, %0" :: "b"(get_cr0() | 0x80000000));
 }
 
-uint32_t Get_ID_PTE(int address)
+uint32_t table_index(uint32_t vaddr)
+{
+	return vaddr/4096/1024;
+}
+
+uint32_t Get_ID_PTE(uint32_t vaddr)
 {
 	uint32_t* PGD = (uint32_t*)&kernel_end;
-	uint32_t table_index = address/4096;
-	uint32_t page_index = address/1024%4;
-	page_table_t* PGT = (void*)(PGD[table_index] & 0xFFFFF000);
+	uint32_t page_index = vaddr/1024%4;
+	page_table_t* PGT = (void*)(PGD[table_index(vaddr)] & 0xFFFFF000);
 	uint32_t ret = PGT->entries[page_index];
 	return ret;
 }
 
-void Set_ID_PTE(int address, uint32_t value)
+void Set_ID_PTE(uint32_t vaddr, uint32_t value)
 {
 	uint32_t* PGD = (uint32_t*)&kernel_end;
-	uint32_t table_index = address/4096;
-	uint32_t page_index = address/1024%4;
-	page_table_t* PGT = (void*)(PGD[table_index] & 0xFFFFF000);
+	uint32_t page_index = vaddr/1024%4;
+	page_table_t* PGT = (void*)(PGD[table_index(vaddr)] & 0xFFFFF000);
 	PGT->entries[page_index] = value;	
 	reload_cr3();
 }

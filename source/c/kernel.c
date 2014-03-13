@@ -75,6 +75,8 @@ int main(void)
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);	
 	
+	Set_ID_PTE(0xF000, Get_ID_PTE(0x100000));
+	
 	//Loop forever until interrupted.
 	for(;;);
 }

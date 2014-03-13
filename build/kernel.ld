@@ -3,7 +3,6 @@ STARTUP(obj/kstub.o)
 INPUT(obj/a20.o)
 INPUT(obj/gdt.o)
 INPUT(obj/isr.o)
-INPUT(obj/end.o)
 /*C*/
 INPUT(obj/kernel.o)
 INPUT(obj/idt.o)
@@ -27,8 +26,7 @@ SECTIONS
 		*(.bss)
 		*(.stack)
 	}
-	.end : {
-		*(.end)
-	}
+	. = ALIGN(4096);
+	kernel_end = .;
 }
 OUTPUT(obj/kernel.elf)
