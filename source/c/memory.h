@@ -20,8 +20,13 @@ typedef struct page_table
 
 //Function Declarations
 void EnablePaging();
-uint32_t Get_ID_PTE(uint32_t vaddr);
-void Set_ID_PTE(uint32_t vaddr, uint32_t value);
+uint32_t Get_PTE(uint32_t vaddr);
+void Set_PTE(uint32_t vaddr, uint32_t value);
+void Map_PTE(uint32_t vaddr, uint32_t paddr, uint32_t flags);
+void Set_Flags_PTE(uint32_t vaddr, uint32_t flags);
+void Enable_PTE(uint32_t vaddr);
+void Disable_PTE(uint32_t vaddr);
+void Mirror_PTE(uint32_t vaddr, uint32_t vaddr2);
 
 //Inline
 void invlpg(uint32_t vaddr);

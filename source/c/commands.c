@@ -50,7 +50,7 @@ void cmd_Creg(void)
 void cmd_Page(char* args)
 {
 	char Chars[32] = {0};	
-	Output("Page Entry [");
+	Output("-Page Entry-\nDirectory: ");
 	int address = charsToInt(args);
 	//int table_index = address/4096;
 	//int page_index = address/1024%4;
@@ -63,18 +63,18 @@ void cmd_Page(char* args)
 		Output("] Address out of range of identity mapping.");
 		return;
 	}*/
-	int entry = Get_ID_PTE(address);
-	Output(":");
-	intToChars(address/4096, Chars); //Which Page
+	int entry = Get_PTE(address);
+	Output("\nTable Index: 0x");
+	intToChars(table_index(address), Chars); //Which Table
 	Output(Chars);
-	Output("]:");
+	Output("\nPage Index: 0x");
 	ClearString(Chars, 32);
-	intToChars(address/1024%4, Chars); //Where In Page
+	intToChars(page_index(address), Chars); //Which Page
 	Output(Chars);
-	Output(":");
-	if (entry == 0) Output("DISABLED");
+	if (entry == 0) Output("Not Mapped");
 	else
 	{
+		Output("\nMapped To: 0x");
 		ClearString(Chars, 32);
 		intToChars(entry & 0xFFFFF000, Chars);
 		Output(Chars);

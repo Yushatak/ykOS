@@ -7,6 +7,14 @@ All Rights Reserved
 
 This is the bulk of the kernel.
 */
+
+/*
+Kernel Memory Map
+
+0x00000000-0x00100000 - First 1MB (owned by kernel)
+0x00100000-0x00400000 - Kernel (including kernel stack, IDT, GDT, and extra space for growth)
+0x00400000-0x00500000 - Virtual Memory Table
+*/
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -73,9 +81,7 @@ int main(void)
 	registerISR(0x0E, &PageFaultHandler);
 	//registerISR(0x30, &DumpRegisters);
 	OutputAt(prompt, 0, promptLine);
-	SetCursor(sizeof(prompt) - 1, promptLine);	
-	
-	Set_ID_PTE(0xF000, Get_ID_PTE(0x100000));
+	SetCursor(sizeof(prompt) - 1, promptLine);
 	
 	//Loop forever until interrupted.
 	for(;;);
@@ -154,33 +160,6 @@ void CommandParser()
 	{
 		cmd_Creg();
 	}
-	else if (StringCompare(cmdbuffer, "pk"))
-	{
-		char temp[32] = {0};
-		intToChars(0xF000, temp);
-		Output("F0K:");
-		Output(temp);
-		Output(":");
-		char temp2[32] = {0};
-		intToChars(*(uint32_t *)charsToInt(temp), temp2);
-		Output(temp2);
-		ClearString(temp, 32);
-		ClearString(temp2, 32);
-		Output("\n100K:");
-		intToChars(0x100000, temp);
-		Output(temp);
-		Output(":");
-		intToChars(*(uint32_t *)charsToInt(temp), temp2);
-		Output(temp2);
-	}
-	else if (StringCompare(cmdbuffer, "map"))
-	{
-		Set_ID_PTE(0x0000F000, Get_ID_PTE(0x00100000));
-	}
-	/*else if (StringCompare(cmdbuffer, "dump"))
-	{
-		__asm__ volatile ("int 0x30");
-	}*/
 	else 
 	{
 		Output("Invalid Command.\n");
@@ -268,7 +247,7 @@ void PageFaultHandler(isr_registers_t* regs)
 	intToChars(address, temp);
 	Output(temp);
 	ClearString(temp, 32);
-	intToChars(Get_ID_PTE(address), temp);
+	intToChars(Get_PTE(address), temp);
 	Output(" (");
 	Output(temp);
 	Output(").\n\n");

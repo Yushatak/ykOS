@@ -47,7 +47,31 @@ inline uint32_t page_index(uint32_t vaddr)
 	return (vaddr/4096)%1024;
 }
 
-uint32_t Get_ID_PTE(uint32_t vaddr)
+void Disable_PTE(uint32_t vaddr)
+{
+	Set_Flags_PTE(vaddr, 0x7FFFFFFF);
+}
+
+void Enable_PTE(uint32_t vaddr)
+{
+	Set_Flags_PTE(vaddr, 0x80000000);
+}
+
+void Set_Flags_PTE(uint32_t vaddr, uint32_t flags)
+{
+	uint32_t* PGD = (uint32_t*)&kernel_end;
+	page_table_t* PGT = (void*)(PGD[table_index(vaddr)] & 0xFFFFF000);
+	uint32_t old = PGT->entries[page_index(vaddr)];
+	PGT->entries[page_index(vaddr)] = old & flags;
+	reload_cr3();
+}
+
+void Map_PTE(uint32_t vaddr, uint32_t paddr, uint32_t flags)
+{
+	Set_PTE(vaddr, paddr & flags);
+}
+
+uint32_t Get_PTE(uint32_t vaddr)
 {
 	uint32_t* PGD = (uint32_t*)&kernel_end;
 	page_table_t* PGT = (void*)(PGD[table_index(vaddr)] & 0xFFFFF000);
@@ -55,12 +79,17 @@ uint32_t Get_ID_PTE(uint32_t vaddr)
 	return ret;
 }
 
-void Set_ID_PTE(uint32_t vaddr, uint32_t value)
+void Set_PTE(uint32_t vaddr, uint32_t value)
 {
 	uint32_t* PGD = (uint32_t*)&kernel_end;
 	page_table_t* PGT = (void*)(PGD[table_index(vaddr)] & 0xFFFFF000);
 	PGT->entries[page_index(vaddr)] = value;	
 	reload_cr3();
+}
+
+void Mirror_PTE(uint32_t vaddr, uint32_t vaddr2)
+{
+	Set_PTE(vaddr, Get_PTE(vaddr2));
 }
 
 inline void invlpg(uint32_t vaddr)
