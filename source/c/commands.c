@@ -13,6 +13,7 @@ This contains the code for individual built-in command applets in the kernel she
 #include "kernel.h"
 #include "commands.h"
 #include "memory.h"
+#include "vmm.h"
 
 void cmd_Convert(char* args)
 {
@@ -79,4 +80,24 @@ void cmd_Page(char* args)
 		intToChars(entry & 0xFFFFF000, Chars);
 		Output(Chars);
 	}
+}
+
+void cmd_Check(char* args)
+{
+	int address = charsToInt(args);
+	Output(args);
+	Output(" is ");
+	if (check(address))
+	{
+		Output("free.");
+	}
+	else Output("taken.");
+}
+
+void cmd_Free(char* args)
+{
+	int address = charsToInt(args);
+	free(address);
+	Output(args);
+	Output(" has been freed.");
 }

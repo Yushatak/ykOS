@@ -22,14 +22,14 @@ then reserve 10% if 64-bit isn't supported, otherwise use long mode
 #include <stdint.h>
 #include <stdbool.h>
 
-const VME_COUNT = 32768;
+const int VME_COUNT = 32768;
+vm_table_t* VMT = (void*)0x500000;
 
 uint32_t palloc(uint16_t tid)
 {
-	vm_table_t* VMT = *(void*)0x500000;
-	for (unsigned int i = 0; i < VME_COUNT, i++)
+	for (unsigned int i = 0; i < VME_COUNT; i++)
 	{
-		vm_entry_t VME = VMT->entries[i];
+		vm_entry_t* VME = &(VMT->entries[i]);
 		if (VME->owner == 0)
 		{
 			VME->owner = tid;
@@ -41,14 +41,12 @@ uint32_t palloc(uint16_t tid)
 
 void free(uint32_t vaddr)
 {
-	vm_table_t* VMT = *(void*)0x500000;
-	vm_entry_t VME = VMT->entries[(vaddr-0xFF000000)/0x1000];
+	vm_entry_t* VME = &(VMT->entries[(vaddr-0xFF000000)/0x1000]);
 	VME->owner = 0;
 }
 
 bool check(uint32_t vaddr)
 {
-	vm_table_t* VMT = *(void*)0x500000;
-	vm_entry_t VME = VMT->entries[(vaddr-0xFF000000)/0x1000];
+	vm_entry_t* VME = &(VMT->entries[(vaddr-0xFF000000)/0x1000]);
 	return (VME->owner == 0);
 }

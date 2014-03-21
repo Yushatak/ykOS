@@ -21,6 +21,7 @@ Kernel Memory Map
 #include "kernel.h"
 #include "memory.h"
 #include "idt.h"
+#include "vmm.h"
 #include "commands.h"
 
 //String Declarations
@@ -149,6 +150,16 @@ void CommandParser()
 		if (splitPos == 0) Output("Invalid Argument(s).\n");
 		else cmd_Page(splitPos);
 	}
+	else if (StartsWith(cmdbuffer, "free "))
+	{
+		if (splitPos == 0) Output("Invalid Argument(s).\n");
+		else cmd_Free(splitPos);
+	}
+	else if (StartsWith(cmdbuffer, "check "))
+	{
+		if (splitPos == 0) Output("Invalid Argument(s).\n");
+		else cmd_Check(splitPos);
+	}
 	else if (StringCompare(cmdbuffer, "clear") || StringCompare(cmdbuffer, "cls"))
 	{
 		ClearScreen();
@@ -159,6 +170,15 @@ void CommandParser()
 	else if (StringCompare(cmdbuffer, "creg"))
 	{
 		cmd_Creg();
+	}
+	else if (StringCompare(cmdbuffer, "palloc"))
+	{
+		uint32_t addr = palloc(1);
+		char temp[32] = {0};
+		intToChars(addr, temp);
+		Output("Allocated Page: ");
+		Output(temp);
+		Output("\n");
 	}
 	else 
 	{
