@@ -16,8 +16,6 @@ if PAE isn't supported, otherwise enable PAE. if a machine has more than 64GB
 then reserve 10% if 64-bit isn't supported, otherwise use long mode
 */
 
-#include "kernel.h"
-#include "memory.h"
 #include "vmm.h"
 #include <stdint.h>
 #include <stdbool.h>

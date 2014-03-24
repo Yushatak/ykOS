@@ -8,6 +8,9 @@ All Rights Reserved
 This contains declarations for the functions to manage and provide allocation/deallocation functionality for virtual memory.
 */
 
+#include <stdint.h>
+#include <stdbool.h>
+
 typedef struct vm_entry
 {
 	uint8_t t_index, p_index;
