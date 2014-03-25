@@ -192,6 +192,8 @@ uint32_t get_cr3();
 uint32_t get_cr4();
 //uint32_t get_cr8();
 void ClearString(char* string, size_t length);
+void Dump();
+void WaitKey();
 
 //Handlers
 void KeyboardHandler(isr_registers_t* regs);

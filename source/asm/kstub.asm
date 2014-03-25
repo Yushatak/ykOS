@@ -30,6 +30,7 @@ section .text
 global kmain
 kmain:
 mov esp,stack_start
+push ebx ;multiboot info
 extern main
 call main
 cli

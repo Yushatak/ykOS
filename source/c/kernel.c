@@ -19,10 +19,14 @@ Kernel Memory Map
 #include <stdbool.h>
 #include <stddef.h>
 #include "kernel.h"
+#include "multiboot.h"
 #include "memory.h"
 #include "idt.h"
 #include "vmm.h"
 #include "commands.h"
+
+//Macro Functions
+#define CHECK_FLAG(flags, bit) ((flags) & (1 << (bit)))
 
 //String Declarations
 char message[] = "32-Bit Kernel Loaded";
@@ -50,17 +54,18 @@ isr_t intHandlers[256];
 bool shift = false;
 bool ctrl = false;
 bool alt = false;
+bool wait = false;
 int promptLine = 24;
 
 //Externs
 extern void* kernel_end;
 
 //Entry Point
-int main(void)
+int main(multiboot_info_t* mbi)
 {		
 	//Memory Setup
 	A20();
-	LinearGDT();
+	LinearGDT();	
 	EnablePaging();
 	
 	//Remap PIC IRQ Table 0->32
@@ -77,10 +82,111 @@ int main(void)
 	
 	//Generate IDT
 	generateIDT();
-	ClearScreen();
+	//ClearScreen();
 	registerISR(0x21, &KeyboardHandler);
 	registerISR(0x0E, &PageFaultHandler);
-	//registerISR(0x30, &DumpRegisters);
+	registerISR(0x30, &DumpRegisters);
+	
+	//Memory Map
+	if (CHECK_FLAG(mbi->flags, 1)) 
+	{
+		Output("Memory Flags OK!");
+		char temp[48] = {0};
+		intToChars(mbi->mem_lower, temp);
+		Output("\nLow Memory: 0x");
+		Output(temp);
+		ClearString(temp, 48);
+		intToChars(mbi->mem_upper, temp);
+		Output("\nHigh Memory: 0x");
+		Output(temp);		
+		ClearString(temp, 48);
+		if (CHECK_FLAG(mbi->flags, 6))
+		{
+			Output("\nMemory Map OK!");
+			intToChars(mbi->mmap_addr, temp);
+			Output("\nMap Address: 0x");
+			Output(temp);
+			ClearString(temp, 48);
+			Output("\nMap Length: 0x");
+			intToChars(mbi->mmap_length, temp);
+			Output(temp);
+			ClearString(temp, 48);
+			Output("\nMap End: 0x");
+			intToChars(mbi->mmap_addr + mbi->mmap_length, temp);
+			Output(temp);
+			ClearString(temp, 48);
+			multiboot_memory_map_t* mm_end = (multiboot_memory_map_t*)(mbi->mmap_addr + mbi->mmap_length);
+			int areaCount = 0;
+			for (multiboot_memory_map_t* mm = (multiboot_memory_map_t*)(mbi->mmap_addr);
+				mm < mm_end;
+				mm = (multiboot_memory_map_t*)((unsigned int)mm + mm->size + sizeof(unsigned int)))
+			{
+				Output("\nArea #");
+				intToChars(++areaCount, temp);
+				Output(temp);
+				/*ClearString(temp, 48);
+				Output(": Entry Size 0x");
+				intToChars(mm->size, temp);
+				Output(temp);*/
+				ClearString(temp, 48);
+				Output(": 0x");
+				if (mm->base_addr_high > 0)
+				{
+					intToChars(mm->base_addr_high, temp);
+					Output(temp);
+					ClearString(temp, 48);
+				}
+				intToChars(mm->base_addr_low, temp);
+				Output(temp);
+				ClearString(temp, 48);
+				Output("->0x");
+				if (((mm->length_high + mm->base_addr_high) > 0xFF && (mm->length_low + mm->base_addr_low) > 0xFF)
+					||
+				((mm->length_high + mm->base_addr_high) == 0 && (mm->length_low + mm->base_addr_low) == 0))
+				{
+					Output("100000000");
+				}
+				else
+				{
+					if ((mm->length_high + mm->base_addr_high) > 0)
+					{
+						intToChars(mm->length_high + mm->base_addr_high, temp);
+						Output(temp);
+						ClearString(temp, 48);
+					}
+					intToChars(mm->length_low + mm->base_addr_low, temp);
+					Output(temp);
+				}
+				ClearString(temp, 48);
+				Output(" (0x");
+				if (mm->length_high > 0)
+				{
+					intToChars(mm->length_high, temp);
+					Output(temp);
+					ClearString(temp, 48);
+				}
+				intToChars(mm->length_low, temp);
+				Output(temp);
+				ClearString(temp, 48);
+				Output(", Type 0x");
+				intToChars(mm->type, temp);
+				Output(temp);
+				Output(")");
+				//WaitKey();
+			}
+		}
+		else
+		{
+			Output("\nInvalid Memory Map!");
+			Dump();
+		}
+	}
+	else 
+	{
+		Output("\nInvalid Flags!");
+		Dump();
+	}
+	
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);
 	
@@ -112,11 +218,30 @@ void Interrupt(isr_registers_t* regs)
 	//}
 }
 
+void Dump()
+{
+	__asm__ volatile ("int 0x30");
+}
+
 void ClearLine(int y)
 {
 	for (int x = 0; x <  80; x++)
 	{
 		vga_memory[ScreenColumns * y + x] = 0x0720;
+	}
+}
+
+void WaitKey()
+{
+	Output("\nPress a key...");
+	wait = true; //Set wait status.
+	while (wait)
+	{
+		if (!wait) 
+		{
+			Output("\nWait Loop Terminated!");
+			break;
+		}
 	}
 }
 
@@ -180,6 +305,11 @@ void CommandParser()
 		Output(temp);
 		Output("\n");
 	}
+	else if (StringCompare(cmdbuffer, "wait"))
+	{
+		WaitKey();
+		Output("\nComplete.");
+	}
 	else 
 	{
 		Output("Invalid Command.\n");
@@ -189,6 +319,8 @@ void CommandParser()
 
 void KeyboardHandler(isr_registers_t* regs)
 {
+	wait = false;
+	
 	uint8_t scancode = inb(0x60);
 	
 	//Enter Pressed
