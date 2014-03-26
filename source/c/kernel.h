@@ -124,6 +124,7 @@ static const char keycode_shift[128] =
 		//the rest are release scancodes mirroring the above for the most part
 };
 
+static const char dec_chars[] = "0123456789";
 static const char nybble_chars[] = "0123456789ABCDEF";
 static const uint8_t char_nybbles[] = 
 {
@@ -163,7 +164,8 @@ void OutputLengthToPort(char *source, int port, int length);
 void Interrupt(isr_registers_t* regptr);
 void ClearLine(int y);
 void memCopyRange(char *source, char *dest, int length);
-void Output(char *source);
+void Output(const char *source, ...);
+void OutputChar(char c);
 void OutputAt(char *source, int x, int y);
 void OutputCharAt(char c, int x, int y);
 void* GetVideoAddress(int x, int y);
@@ -171,7 +173,9 @@ void OutputHexByte(uint8_t byte);
 void OutputHexByteAt(uint8_t byte, int x, int y);
 void ClearScreen();
 char NibbleToChar(int nibble);
-void intToChars(unsigned int val, char* out);
+void uintToHexChars(unsigned int val, char* out);
+void uintToDecChars(unsigned int val, char* out);
+void intToDecChars(int val, char* out);
 void memPut(void* address, uint8_t value);
 void memPutW(void* address, uint16_t value);
 uint8_t memGet(void* address);
@@ -194,6 +198,8 @@ uint32_t get_cr4();
 void ClearString(char* string, size_t length);
 void Dump();
 void WaitKey();
+int GetMemoryCount();
+void printf (const char *format, ...);
 
 //Handlers
 void KeyboardHandler(isr_registers_t* regs);

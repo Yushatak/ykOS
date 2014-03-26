@@ -27,23 +27,23 @@ void cmd_Peek(char* args, size_t argsize)
 	Output(args);
 	Output(":");
 	char Chars[32] = {0};
-	intToChars(*(uint32_t *)charsToInt(args), Chars);
+	uintToHexChars(*(uint32_t *)charsToInt(args), Chars);
 	Output(Chars);
 }
 
 void cmd_Creg(void)
 {
 	char Chars[32] = {0};
-	intToChars(get_cr0(), Chars);
+	uintToHexChars(get_cr0(), Chars);
 	Output("CR0: ");
 	Output(Chars);
-	intToChars(get_cr2(), Chars);
+	uintToHexChars(get_cr2(), Chars);
 	Output("\nCR2: ");
 	Output(Chars);
-	intToChars(get_cr3(), Chars);
+	uintToHexChars(get_cr3(), Chars);
 	Output("\nCR3: ");
 	Output(Chars);
-	intToChars(get_cr4(), Chars);
+	uintToHexChars(get_cr4(), Chars);
 	Output("\nCR4: ");
 	Output(Chars);
 }
@@ -56,7 +56,7 @@ void cmd_Page(char* args)
 	//int table_index = address/4096;
 	//int page_index = address/1024%4;
 	
-	intToChars((get_cr3() & 0xFFFFF000), Chars);
+	uintToHexChars((get_cr3() & 0xFFFFF000), Chars);
 	Output(Chars);
 	ClearString(Chars, 32);
 	/*if (table_index > 0x400 || page_index > 0x400)
@@ -66,18 +66,18 @@ void cmd_Page(char* args)
 	}*/
 	int entry = Get_PTE(address);
 	Output("\nTable Index: 0x");
-	intToChars(table_index(address), Chars); //Which Table
+	uintToHexChars(table_index(address), Chars); //Which Table
 	Output(Chars);
 	Output("\nPage Index: 0x");
 	ClearString(Chars, 32);
-	intToChars(page_index(address), Chars); //Which Page
+	uintToHexChars(page_index(address), Chars); //Which Page
 	Output(Chars);
 	if (entry == 0) Output("Not Mapped");
 	else
 	{
 		Output("\nMapped To: 0x");
 		ClearString(Chars, 32);
-		intToChars(entry & 0xFFFFF000, Chars);
+		uintToHexChars(entry & 0xFFFFF000, Chars);
 		Output(Chars);
 	}
 }

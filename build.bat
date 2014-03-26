@@ -27,6 +27,7 @@ i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -masm=intel -m3
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -masm=intel -c source/c/commands.c -o obj/commands.o
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -masm=intel -c source/c/memory.c -o obj/memory.o
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -masm=intel -c source/c/vmm.c -o obj/vmm.o
+i486-elf-gcc -Os -ffreestanding -Wall -Werror -pedantic -std=c99 -masm=intel -c source/c/pmm.c -o obj/pmm.o
 echo =Linking Kernel...
 i486-elf-ld --relax -static -n -T build/kernel.ld --oformat=elf32-i386
 echo =Finalizing Kernel...

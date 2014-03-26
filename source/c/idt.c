@@ -15,6 +15,8 @@ system. It links to various things in "isr.asm".
 //External Symbols
 //Interrupt Service Routine Wrappers (from ISR.ASM)
 extern isr_registers_t* ISR0, ISR1, ISR2, ISR3, ISR4, ISR5, ISR6, ISR7, ISR8, ISR9, ISR10, ISR11, ISR12, ISR13, ISR14, ISR15, ISR16, ISR17, ISR18, ISR19, ISR20, ISR21, ISR22, ISR23, ISR24, ISR25, ISR26, ISR27, ISR28, ISR29, ISR30, ISR31;
+//Software Interrupts (from ISR.ASM)
+extern isr_registers_t* ISR48;
 //Interrupt Request Wrappers (from ISR.ASM)
 extern isr_registers_t* IRQ0, IRQ1, IRQ2, IRQ3, IRQ4, IRQ5, IRQ6, IRQ7, IRQ8, IRQ9, IRQ10, IRQ11, IRQ12, IRQ13, IRQ14, IRQ15;
 uint32_t ISR[256];
@@ -73,6 +75,7 @@ void generateIDT()
 	ISR[45] = (uint32_t)&IRQ13;
 	ISR[46] = (uint32_t)&IRQ14;
 	ISR[47] = (uint32_t)&IRQ15;
+	ISR[48] = (uint32_t)&ISR48;
 	
 	memFill(idt_entries, sizeof(idt_entry_t)*256, 0);
 	for (int i = 0; i < 256; i++)

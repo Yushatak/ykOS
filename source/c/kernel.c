@@ -23,6 +23,7 @@ Kernel Memory Map
 #include "memory.h"
 #include "idt.h"
 #include "vmm.h"
+#include "pmm.h"
 #include "commands.h"
 
 //Macro Functions
@@ -46,6 +47,7 @@ int CursorX = 0;
 int CursorY = 23;
 int ScreenColumns = 80;
 int ScreenRows = 25;
+int Memory = 0;
 const int VGABaseAddress = 0xB8000;
 const int VGALimit = 0xBFFFF;
 int BytesPerChar = 2;
@@ -54,7 +56,7 @@ isr_t intHandlers[256];
 bool shift = false;
 bool ctrl = false;
 bool alt = false;
-bool wait = false;
+static volatile bool wait = false;
 int promptLine = 24;
 
 //Externs
@@ -92,27 +94,29 @@ int main(multiboot_info_t* mbi)
 	{
 		Output("Memory Flags OK!");
 		char temp[48] = {0};
-		intToChars(mbi->mem_lower, temp);
-		Output("\nLow Memory: 0x");
+		intToDecChars(mbi->mem_lower, temp);
+		Output("\nLow Memory: ");
 		Output(temp);
 		ClearString(temp, 48);
-		intToChars(mbi->mem_upper, temp);
-		Output("\nHigh Memory: 0x");
+		intToDecChars(mbi->mem_upper, temp);
+		Output("KB\nHigh Memory: ");
 		Output(temp);		
+		Output("KB");
 		ClearString(temp, 48);
+		Memory = mbi->mem_lower + mbi->mem_upper;
 		if (CHECK_FLAG(mbi->flags, 6))
 		{
 			Output("\nMemory Map OK!");
-			intToChars(mbi->mmap_addr, temp);
+			uintToHexChars(mbi->mmap_addr, temp);
 			Output("\nMap Address: 0x");
 			Output(temp);
 			ClearString(temp, 48);
-			Output("\nMap Length: 0x");
-			intToChars(mbi->mmap_length, temp);
+			Output("\nMap Length: ");
+			intToDecChars(mbi->mmap_length, temp);
 			Output(temp);
 			ClearString(temp, 48);
-			Output("\nMap End: 0x");
-			intToChars(mbi->mmap_addr + mbi->mmap_length, temp);
+			Output("KB\nMap End: 0x");
+			uintToHexChars(mbi->mmap_addr + mbi->mmap_length, temp);
 			Output(temp);
 			ClearString(temp, 48);
 			multiboot_memory_map_t* mm_end = (multiboot_memory_map_t*)(mbi->mmap_addr + mbi->mmap_length);
@@ -122,21 +126,21 @@ int main(multiboot_info_t* mbi)
 				mm = (multiboot_memory_map_t*)((unsigned int)mm + mm->size + sizeof(unsigned int)))
 			{
 				Output("\nArea #");
-				intToChars(++areaCount, temp);
+				uintToHexChars(++areaCount, temp);
 				Output(temp);
 				/*ClearString(temp, 48);
 				Output(": Entry Size 0x");
-				intToChars(mm->size, temp);
+				uintToHexChars(mm->size, temp);
 				Output(temp);*/
 				ClearString(temp, 48);
 				Output(": 0x");
 				if (mm->base_addr_high > 0)
 				{
-					intToChars(mm->base_addr_high, temp);
+					uintToHexChars(mm->base_addr_high, temp);
 					Output(temp);
 					ClearString(temp, 48);
 				}
-				intToChars(mm->base_addr_low, temp);
+				uintToHexChars(mm->base_addr_low, temp);
 				Output(temp);
 				ClearString(temp, 48);
 				Output("->0x");
@@ -150,26 +154,26 @@ int main(multiboot_info_t* mbi)
 				{
 					if ((mm->length_high + mm->base_addr_high) > 0)
 					{
-						intToChars(mm->length_high + mm->base_addr_high, temp);
+						uintToHexChars(mm->length_high + mm->base_addr_high, temp);
 						Output(temp);
 						ClearString(temp, 48);
 					}
-					intToChars(mm->length_low + mm->base_addr_low, temp);
+					uintToHexChars(mm->length_low + mm->base_addr_low, temp);
 					Output(temp);
 				}
 				ClearString(temp, 48);
 				Output(" (0x");
 				if (mm->length_high > 0)
 				{
-					intToChars(mm->length_high, temp);
+					uintToHexChars(mm->length_high, temp);
 					Output(temp);
 					ClearString(temp, 48);
 				}
-				intToChars(mm->length_low, temp);
+				uintToHexChars(mm->length_low, temp);
 				Output(temp);
 				ClearString(temp, 48);
 				Output(", Type 0x");
-				intToChars(mm->type, temp);
+				uintToHexChars(mm->type, temp);
 				Output(temp);
 				Output(")");
 				//WaitKey();
@@ -192,6 +196,11 @@ int main(multiboot_info_t* mbi)
 	
 	//Loop forever until interrupted.
 	for(;;);
+}
+
+int GetMemoryCount()
+{
+	return Memory;
 }
 
 void Interrupt(isr_registers_t* regs)
@@ -233,16 +242,14 @@ void ClearLine(int y)
 
 void WaitKey()
 {
-	Output("\nPress a key...");
+	Output("Press a key...");
 	wait = true; //Set wait status.
+	__asm__ volatile("sti");
 	while (wait)
 	{
-		if (!wait) 
-		{
-			Output("\nWait Loop Terminated!");
-			break;
-		}
+		continue;
 	}
+	__asm__ volatile("cli");
 }
 
 void CommandParser()
@@ -298,27 +305,33 @@ void CommandParser()
 	}
 	else if (StringCompare(cmdbuffer, "palloc"))
 	{
-		uint32_t addr = palloc(1);
-		char temp[32] = {0};
-		intToChars(addr, temp);
-		Output("Allocated Page: ");
-		Output(temp);
-		Output("\n");
+		Output("Allocated Page: 0x%x", palloc(1));
 	}
 	else if (StringCompare(cmdbuffer, "wait"))
 	{
 		WaitKey();
 		Output("\nComplete.");
 	}
+	else if (StringCompare(cmdbuffer, "mem"))
+	{
+		Output("Memory: %dKB", Memory);
+	}
+	else if (StringCompare(cmdbuffer, "dump"))
+	{
+		Dump();
+	}
 	else 
 	{
-		Output("Invalid Command.\n");
+		Output("Invalid Command.");
 	}
 	memFill(cmdbuffer, sizeof(cmdbuffer), 0);
 }
 
 void KeyboardHandler(isr_registers_t* regs)
 {
+	//Need to design a system to handle interrupt handler feedback in the kernel
+	//rather than handling it all in the handler itself. Can't interrupt if we're still 
+	//in an interrupt handler!
 	wait = false;
 	
 	uint8_t scancode = inb(0x60);
@@ -393,16 +406,8 @@ void KeyboardHandler(isr_registers_t* regs)
 
 void PageFaultHandler(isr_registers_t* regs)
 {
-	Output("\n\nPage Fault At 0x");
-	char temp[32] = {0};
-	int address = get_cr2();
-	intToChars(address, temp);
-	Output(temp);
-	ClearString(temp, 32);
-	intToChars(Get_PTE(address), temp);
-	Output(" (");
-	Output(temp);
-	Output(").\n\n");
+	uint32_t cr2 = get_cr2();
+	Output("\n\nPage Fault At 0x%x (%x).\n\n", cr2, Get_PTE(cr2));
 	DumpRegisters(regs);
 	//TODO: Dynamically add page so that when it returns to the same spot, it
 	//doesn't fault again, and remove the below halt/loop.
@@ -413,98 +418,29 @@ void PageFaultHandler(isr_registers_t* regs)
 
 void DumpRegisters(isr_registers_t* regs)
 {
-	char temp[32] = {0};
-	Output("Register Structure: 0x");
-	intToChars((uint32_t)regs, temp);
-	Output(temp);
-	ClearString(temp, 32);
-	Output("\nINT: 0x");
-	intToChars(regs->intvec, temp);
-	Output(temp);
-	Output(" | Error Code: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->ec, temp);
-	Output(temp);
-	Output("\nEIP: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->eip, temp);
-	Output(temp);
-	Output("\nCR0: 0x");
-	ClearString(temp, 32);
-	intToChars(get_cr0(), temp);
-	Output(temp);
-	Output(" | CR2: 0x");
-	ClearString(temp, 32);
-	intToChars(get_cr2(), temp);
-	Output(temp);
-	Output(" | CR3: 0x");
-	ClearString(temp, 32);
-	intToChars(get_cr3(), temp);
-	Output(temp);
-	Output(" | CR4: 0x");
-	ClearString(temp, 32);
-	intToChars(get_cr4(), temp);
-	Output(temp);
-	Output("\nESP: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->esp, temp);
-	Output(temp);
-	Output(" | EBP: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->ebp, temp);
-	Output(temp);
-	Output(" | EDI: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->edi, temp);
-	Output(temp);
-	Output(" | ESI: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->esi, temp);
-	Output(temp);
-	Output("\nEAX: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->eax, temp);
-	Output(temp);
-	Output(" | EBX: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->ebx, temp);
-	Output(temp);
-	Output(" | ECX: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->ecx, temp);
-	Output(temp);
-	Output(" | EDX: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->edx, temp);
-	Output(temp);
-	Output("\nSS: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->ss, temp);
-	Output(temp);
-	Output(" | CS: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->cs, temp);
-	Output(temp);
-	Output(" | DS: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->ds, temp);
-	Output(temp);
-	Output(" | ES: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->es, temp);
-	Output(temp);
-	Output(" | FS: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->fs, temp);
-	Output(temp);
-	Output(" | GS: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->gs, temp);
-	Output(temp);
-	Output("\nEFLAGS: 0x");
-	ClearString(temp, 32);
-	intToChars(regs->eflags, temp);
-	Output(temp);
+	Output("Register Structure: 0x%x", regs);
+	Output("\nINT: 0x%x", regs->intvec);
+	Output(" | Error Code: 0x%x", regs->ec);
+	Output("\nEIP: 0x%x", regs->eip);
+	Output("\nCR0: 0x%x", get_cr0());
+	Output(" | CR2: 0x%x", get_cr2());
+	Output(" | CR3: 0x%x", get_cr3());
+	Output(" | CR4: 0x%x", get_cr4());
+	Output("\nESP: 0x%x", regs->esp);
+	Output(" | EBP: 0x%x", regs->ebp);
+	Output(" | EDI: 0x%x", regs->edi);
+	Output(" | ESI: 0x%x", regs->esi);
+	Output("\nEAX: 0x%x", regs->eax);
+	Output(" | EBX: 0x%x", regs->ebx);
+	Output(" | ECX: 0x%x", regs->ecx);
+	Output(" | EDX: 0x%x", regs->edx);
+	Output("\nSS: 0x%x", regs->ss);
+	Output(" | CS: 0x%x", regs->cs);
+	Output(" | DS: 0x%x", regs->ds);
+	Output(" | ES: 0x%x", regs->es);
+	Output(" | FS: 0x%x", regs->fs);
+	Output(" | GS: 0x%x", regs->gs);
+	Output("\nEFLAGS: 0x%x", regs->eflags);
 }
 
 void ClearString(char* string, size_t length)
@@ -592,24 +528,59 @@ void Scroll()
 	CursorX = 0; //Line Feed
 }
 
-void Output(char *source)
+void Output(const char *source, ...)
 {
-	while (*source)
+	char** arg = (char**)&source;
+	arg++;
+	char c;
+	char buffer[32] = {0};
+	while ((c = *source++) != 0)
 	{
-		if (CursorX == ScreenColumns - 1)
+		if (CursorX == ScreenColumns - 1) Scroll();
+		if (c == '%')
 		{
-			Scroll();
+			char* ptr;
+			c = *source++;
+			switch (c)
+			{
+				case 'd':
+					intToDecChars(*((int*)arg++), buffer);
+					ptr=buffer;
+					goto string;
+					break;
+				case 'h':
+				case 'x':
+					uintToHexChars(*((int*)arg++), buffer);
+					ptr=buffer;
+					goto string;
+					break;
+				case 's':
+					ptr=*arg++;
+					if (!ptr)
+						ptr = "NULL";
+				string:
+					while(*ptr)
+						OutputChar(*ptr++);
+					break;
+				default:
+					OutputChar(*((int*)arg++));
+					break;
+			}
 		}
-		if (*(char *)source == '\n')
-		{
-			Scroll();
-			source++;
-			continue;
-		}
-		char *destination = (char *)GetVideoAddress(CursorX++, CursorY);
-		*destination = *source++;
-		*++destination = 0x07;
+		else OutputChar(c);
 	}
+}
+
+void OutputChar(char c)
+{
+	if (c == '\n')
+	{
+		Scroll();
+		return;
+	}
+	char *destination = (char *)GetVideoAddress(CursorX++, CursorY);
+	*destination = c;
+	*++destination = 0x07;
 }
 
 //Outputs the string at the address pointed to by *source to the screen coordinates specified, advancing the text cursor when done.
@@ -634,7 +605,7 @@ void OutputCharAt(char c, int x, int y)
 void OutputHexByteAt(uint8_t byte, int x, int y)
 {
 	char Chars[3];
-	intToChars(byte, Chars);
+	uintToHexChars(byte, Chars);
 	Chars[2] = 0x0; //terminator
 	OutputAt(Chars, x, y);
 }
@@ -642,7 +613,7 @@ void OutputHexByteAt(uint8_t byte, int x, int y)
 void OutputHexByte(uint8_t byte)
 {
 	char Chars[3];
-	intToChars(byte, Chars);
+	uintToHexChars(byte, Chars);
 	Chars[2] = 0x0; //terminator
 	Output(Chars);
 }
@@ -681,7 +652,7 @@ void streamToHex(void* stream, void* hex, size_t limit)
 		//if (i+5 > limit) break;
 		if (*str == 0x0) break;
 		char result[2] = {0};
-		intToChars(*str++, result);
+		uintToHexChars(*str++, result);
 		//hex[i++] = '0'; //hex prefix
 		//hex[i++] = 'x';
 		out[i++] = result[0]; //actual hex
@@ -697,13 +668,13 @@ void streamToHex(void* stream, void* hex, size_t limit)
 
 //These functions could be useful in situations where speed is very important.
 //char* Out should point to something that can hold two or more chars.
-/*void intToChars(uint8_t i, char* out)
+/*void uintToHexChars(uint8_t i, char* out)
 {
 	out[0] = nybble_chars[i / 16];
 	out[1] = nybble_chars[i % 16];
 }
 
-void intToChars16(uint16_t i, char* out)
+void uintToHexChars16(uint16_t i, char* out)
 {
 	out[0] = nybble_chars[i / 16 / 16];
 	out[1] = nybble_chars[i / 16 % 16];
@@ -711,7 +682,7 @@ void intToChars16(uint16_t i, char* out)
 	out[3] = nybble_chars[i % 16 % 16];
 }*/
 
-void intToChars(unsigned int val, char* out)
+void uintToHexChars(unsigned int val, char* out)
 {
 	size_t p = 0;
 	//out[p++] = '0';
@@ -723,6 +694,45 @@ void intToChars(unsigned int val, char* out)
 		size_t pos = i - 1;
 		out[p + pos] = nybble_chars[val % 16];
 		val /= 16;
+	}
+	p += digits;
+	//out[p] = 0x0;
+}
+
+void uintToDecChars(unsigned int val, char* out)
+{
+	size_t p = 0;
+	//out[p++] = '0';
+	//out[p++] = 'x';
+	size_t digits = 1;
+	for (unsigned int length = val; length >= 10; length /= 10) digits++;
+	for (size_t i = digits; i != 0; i--)
+	{
+		size_t pos = i - 1;
+		out[p + pos] = dec_chars[val % 10];
+		val /= 10;
+	}
+	p += digits;
+	//out[p] = 0x0;
+}
+
+void intToDecChars(int val, char* out)
+{
+	size_t p = 0;
+	if (val < 0) //If negative, prefix it.
+	{
+		out[p] = '-';
+		p++;
+	}
+	//out[p++] = '0';
+	//out[p++] = 'x';
+	size_t digits = 1;
+	for (int length = val; length >= 10; length /= 10) digits++;
+	for (size_t i = digits; i != 0; i--)
+	{
+		size_t pos = i - 1;
+		out[p + pos] = dec_chars[val % 10];
+		val /= 10;
 	}
 	p += digits;
 	//out[p] = 0x0;

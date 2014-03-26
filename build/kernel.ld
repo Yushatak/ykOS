@@ -9,6 +9,7 @@ INPUT(obj/idt.o)
 INPUT(obj/commands.o)
 INPUT(obj/memory.o)
 INPUT(obj/vmm.o)
+INPUT(obj/pmm.o)
 SECTIONS
 {
 	. = 0x100000;

@@ -10,4 +10,11 @@ Manages and provides allocation/deallocation functionality for physical memory.
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include "pmm.h"
+#include "kernel.h"
+
+uint32_t malloc(size_t amount)
+{
+	return 0;
+}

@@ -10,3 +10,7 @@ This contains declarations for the functions to manage and provide allocation/de
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
+
+//Function Definitions
+uint32_t malloc(size_t amount);
