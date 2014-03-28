@@ -9,6 +9,7 @@ This contains the code for kernel threading, depending heavily on "context.c".
 */
 
 #include "context.h"
+#include "kthread.h"
 
 //Externs
 extern void* kernel_end;
@@ -16,7 +17,7 @@ extern void* stack_start;
 
 kthread_t* construct_boot_kthread(kthread_t* store_at)
 {
-	kthread_t* kt = (kthread_t*)store_at;
+	kthread_t* kt = store_at;
 	kt->stack_end = &kernel_end; //Stack goes from stack_start to kernel_end
 	kt->stack_pointer = get_esp();
 	kt->stack_base = &stack_start;
@@ -37,5 +38,5 @@ kthread_t* get_kthread(void* store_at, void* entry_point, uint16_t stack_size)
 
 void switch_kthread(kthread_t* kt)
 {
-	context_switch((void*)get_esp(), &(kt->stack_pointer));
+	context_switch((void*)get_esp(), &kt->stack_pointer);
 }

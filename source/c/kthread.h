@@ -15,7 +15,6 @@ typedef struct kthread
 	uint16_t thread_id;
 	uint32_t entry_point;
 	uint32_t stack_base, stack_pointer, stack_end;
-	uint32_t eax, ebx, ecx, edx, ebp, edi, esi;
 	uint8_t priority;	
 } kthread_t;
 

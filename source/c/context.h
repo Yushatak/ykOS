@@ -11,6 +11,4 @@ to switch contexts, and store/load contexts from memory.
 
 #include <stdint.h>
 
-uint8_t get_ring()
-void set_ring(uint8_t level);
 void context_switch(void** oldStack, void* newStack);
