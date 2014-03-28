@@ -14,6 +14,8 @@ Kernel Memory Map
 0x00000000-0x00100000 - First 1MB (owned by kernel)
 0x00100000-0x00400000 - Kernel (including kernel stack, IDT, GDT, and extra space for growth)
 0x00400000-0x00500000 - Virtual Memory Table
+0x00500000-0x00600000 - Physical Memory Table
+0x00600000-0x00700000 - Kernel Thread Table
 */
 #include <stdint.h>
 #include <stdbool.h>
@@ -29,6 +31,7 @@ Kernel Memory Map
 
 //Macro Functions - Try to use inline when more appropriate, rather than adding lots of these!
 #define CHECK_FLAG(flags, bit) ((flags) & (1 << (bit)))
+#define BOCHS_BP() __asm__ volatile ("xchg bx,bx");
 
 //String Declarations
 char message[] = "32-Bit Kernel Loaded";
@@ -59,7 +62,8 @@ bool ctrl = false;
 bool alt = false;
 static volatile bool wait = false;
 int promptLine = 24;
-kthread_t* boot_kthread = (kthread_t*)0x2000;
+kthread_t* boot_kthread = (kthread_t*)0x600000;
+kthread_t* test_kthread = (kthread_t*)0x601000;
 
 //Externs
 extern void* kernel_end;
@@ -193,13 +197,22 @@ int main(multiboot_info_t* mbi)
 		Dump();
 	}
 	
-	construct_boot_kthread(boot_kthread);
-	
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);
 	
+	construct_boot_kthread(boot_kthread);
+	uint32_t ep = (uint32_t)&print_hello;
+	get_kthread(test_kthread, ep);
+	switch_kthread(boot_kthread, test_kthread);
+	
 	//Loop forever until interrupted.
 	for(;;);
+}
+
+void print_hello()
+{
+	BOCHS_BP();
+	OutputAt("Hello, I'm from a thread! :D", 1, 1);
 }
 
 int GetMemoryCount()
@@ -833,13 +846,6 @@ inline uint8_t inb(uint16_t port)
 {
 	uint8_t ret;
 	__asm__ volatile ("inb %0, %1" : "=a"(ret) : "Nd"(port));
-	return ret;
-}
-
-inline uint32_t get_eip()
-{
-	uint32_t ret = 0;
-	__asm__ volatile ("mov %0, eip" : "=a"(ret));
 	return ret;
 }
 

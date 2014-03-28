@@ -5,38 +5,41 @@ Written by J. "Yushatak" S.
 Copyright Yushatak 2014
 All Rights Reserved
 
-This contains the code for kernel threading, depending heavily on "context.c".
+This contains the code for kernel threading.
 */
 
-#include "context.h"
 #include "kthread.h"
+#include "kernel.h"
 
 //Externs
 extern void* kernel_end;
 extern void* stack_start;
+extern void ctxt_sw(void** oldStack, void* newStack);
 
-kthread_t* construct_boot_kthread(kthread_t* store_at)
+void construct_boot_kthread(kthread_t* store_at)
 {
 	kthread_t* kt = store_at;
-	kt->stack_end = &kernel_end; //Stack goes from stack_start to kernel_end
-	kt->stack_pointer = get_esp();
-	kt->stack_base = &stack_start;
-	kt->entry_point = get_eip();
-	return kt;
+	kt->stack_top = (uint32_t)&kernel_end; //Stack goes from stack_start to kernel_end
+	//kt->stack_base = (uint32_t)&stack_start;
+	kt->entry_point = 0x100000;
 }
 
-kthread_t* get_kthread(void* store_at, void* entry_point, uint16_t stack_size)
+void get_kthread(void* store_at, uint32_t entry_point)
 {
 	kthread_t* kt = (kthread_t*)store_at;
-	kt->entry_point = &entry_point;
-	kt->priority = 0;
-	kt->stack_base = 0x400000; //Temporary placeholder, no physical memory manager yet.
-	kt->stack_end = kt->stack_base - stack_size; //Auto-calculate the stack end based on base/size.
-	kt->stack_pointer = kt->stack_end; //Start at the top, this is a new thread.
-	return kt;
+	kt->entry_point = entry_point;
+	kt->stack_top = 0x1FFFF; //Temporary placeholder, no physical memory manager yet.
+	uint32_t* sp = (uint32_t*)0x1FFFF - sizeof(uint32_t);
+	*sp = entry_point;
+	for (int i = 0; i < 8; i++) //zero out register values and adjust stack pointer
+	{
+		sp--;
+		*sp = 0;
+	}
+	kt->stack_pointer = (uint32_t)sp;
 }
 
-void switch_kthread(kthread_t* kt)
+void switch_kthread(kthread_t* ckt, kthread_t* kt)
 {
-	context_switch((void*)get_esp(), &kt->stack_pointer);
+	ctxt_sw((void**)&ckt->stack_pointer, (void*)kt->stack_pointer);
 }

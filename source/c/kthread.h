@@ -7,18 +7,15 @@ All Rights Reserved
 
 This contains the struct/function declarationsfor kernel threading.
 */
+#include <stdint.h>
 
 //Structs
 typedef struct kthread
 {
-	char name[32];
-	uint16_t thread_id;
-	uint32_t entry_point;
-	uint32_t stack_base, stack_pointer, stack_end;
-	uint8_t priority;	
+	uint32_t entry_point, stack_top, stack_pointer;
 } kthread_t;
 
 //Function Declarations
-kthread_t* construct_boot_kthread(void* store_at);
-kthread_t* get_kthread(void* store_at, void* entry_point, uint16_t stack_size);
-void switch_kthread(kthread_t* kt);
+void construct_boot_kthread(kthread_t* store_at);
+void get_kthread(void* store_at, uint32_t entry_point);
+void switch_kthread(kthread_t* ckt, kthread_t* kt);

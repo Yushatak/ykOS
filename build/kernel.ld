@@ -11,7 +11,6 @@ INPUT(obj/commands.o)
 INPUT(obj/memory.o)
 INPUT(obj/vmm.o)
 INPUT(obj/pmm.o)
-INPUT(obj/context.o)
 INPUT(obj/kthread.o)
 SECTIONS
 {
