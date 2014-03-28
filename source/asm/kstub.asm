@@ -22,6 +22,7 @@ dd cFlags
 dd cChecksum
 
 section .stack
+global stack_start
 align 4
 times 16384 db 0
 stack_start:

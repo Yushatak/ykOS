@@ -12,16 +12,6 @@ This contains the code to switch contexts, and store/load contexts from memory.
 
 extern void ctxt_sw(void** oldStack, void* newStack);
 
-uint8_t get_ring()
-{
-	return 0; //placeholder
-}
-
-void set_ring(uint8_t level)
-{
-	return; //placeholder
-}
-
 void context_switch(void** oldStack, void* newStack)
 {
 	ctxt_sw(oldStack, newStack);

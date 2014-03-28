@@ -22,11 +22,12 @@ Kernel Memory Map
 #include "multiboot.h"
 #include "memory.h"
 #include "idt.h"
+#include "kthread.h"
 #include "vmm.h"
 #include "pmm.h"
 #include "commands.h"
 
-//Macro Functions
+//Macro Functions - Try to use inline when more appropriate, rather than adding lots of these!
 #define CHECK_FLAG(flags, bit) ((flags) & (1 << (bit)))
 
 //String Declarations
@@ -58,6 +59,7 @@ bool ctrl = false;
 bool alt = false;
 static volatile bool wait = false;
 int promptLine = 24;
+kthread_t* boot_kthread = (kthread_t*)0x2000;
 
 //Externs
 extern void* kernel_end;
@@ -190,6 +192,8 @@ int main(multiboot_info_t* mbi)
 		Output("\nInvalid Flags!");
 		Dump();
 	}
+	
+	construct_boot_kthread(boot_kthread);
 	
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);
@@ -829,6 +833,20 @@ inline uint8_t inb(uint16_t port)
 {
 	uint8_t ret;
 	__asm__ volatile ("inb %0, %1" : "=a"(ret) : "Nd"(port));
+	return ret;
+}
+
+inline uint32_t get_eip()
+{
+	uint32_t ret = 0;
+	__asm__ volatile ("mov %0, eip" : "=a"(ret));
+	return ret;
+}
+
+inline uint32_t get_esp()
+{
+	uint32_t ret = 0;
+	__asm__ volatile ("mov %0, esp" : "=a"(ret));
 	return ret;
 }
 

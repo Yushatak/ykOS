@@ -190,6 +190,7 @@ void memFillW(void* address, int length, uint16_t value);
 void streamToHex(void* stream, void* hex, size_t limit);
 void outb(uint16_t port, uint8_t val);
 uint8_t inb(uint16_t port);
+uint32_t get_esp();
 uint32_t get_cr0();
 uint32_t get_cr2();
 uint32_t get_cr3();
