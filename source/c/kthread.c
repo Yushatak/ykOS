@@ -21,15 +21,21 @@ void construct_boot_kthread(kthread_t* store_at)
 	kthread_t* kt = store_at;
 	kt->stack_top = (uint32_t)&kernel_end; //Stack goes from stack_start to kernel_end
 	//kt->stack_base = (uint32_t)&stack_start;
-	kt->entry_point = 0x100000;
+	uint32_t ep = (uint32_t)&kernel_loop;
+	kt->entry_point = ep;
+	uint32_t* sp = (uint32_t*)get_esp();
+	sp--;
+	*sp = ep;
+	sp-=8;
+	kt->stack_pointer = (uint32_t)sp;
 }
 
-void get_kthread(void* store_at, uint32_t entry_point)
+void get_kthread(void* store_at, uint32_t entry_point, uint32_t stack_top)
 {
 	kthread_t* kt = (kthread_t*)store_at;
 	kt->entry_point = entry_point;
-	kt->stack_top = 0x1FFFF; //Temporary placeholder, no physical memory manager yet.
-	uint32_t* sp = (uint32_t*)0x1FFFF - sizeof(uint32_t);
+	kt->stack_top = stack_top; //Temporary placeholder, no physical memory manager yet.
+	uint32_t* sp = (uint32_t*)stack_top - sizeof(uint32_t);
 	*sp = entry_point;
 	for (int i = 0; i < 8; i++) //zero out register values and adjust stack pointer
 	{
@@ -41,5 +47,6 @@ void get_kthread(void* store_at, uint32_t entry_point)
 
 void switch_kthread(kthread_t* ckt, kthread_t* kt)
 {
+	Output("\nContext Switch!");
 	ctxt_sw((void**)&ckt->stack_pointer, (void*)kt->stack_pointer);
 }

@@ -201,9 +201,12 @@ void ClearString(char* string, size_t length);
 void Dump();
 void WaitKey();
 int GetMemoryCount();
-void print_hello();
+void t1();
+void t2();
+void kernel_loop();
 
 //Handlers
 void KeyboardHandler(isr_registers_t* regs);
 void PageFaultHandler(isr_registers_t* regs);
 void DumpRegisters(isr_registers_t* regs);
+void KernelThreadSwap(isr_registers_t* regs);

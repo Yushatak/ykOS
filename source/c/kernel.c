@@ -64,6 +64,10 @@ static volatile bool wait = false;
 int promptLine = 24;
 kthread_t* boot_kthread = (kthread_t*)0x600000;
 kthread_t* test_kthread = (kthread_t*)0x601000;
+kthread_t* test2_kthread = (kthread_t*)0x602000;
+
+kthread_t* current_kthread;
+kthread_t* new_kthread;
 
 //Externs
 extern void* kernel_end;
@@ -94,6 +98,7 @@ int main(multiboot_info_t* mbi)
 	registerISR(0x21, &KeyboardHandler);
 	registerISR(0x0E, &PageFaultHandler);
 	registerISR(0x30, &DumpRegisters);
+	registerISR(0x31, &KernelThreadSwap);
 	
 	//Memory Map
 	if (CHECK_FLAG(mbi->flags, 1)) 
@@ -199,20 +204,47 @@ int main(multiboot_info_t* mbi)
 	
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);
-	
-	construct_boot_kthread(boot_kthread);
-	uint32_t ep = (uint32_t)&print_hello;
-	get_kthread(test_kthread, ep);
-	switch_kthread(boot_kthread, test_kthread);
-	
+	uint32_t ep = (uint32_t)&kernel_loop;
+	get_kthread(boot_kthread, ep, (uint32_t)&kernel_end);
+	ep = (uint32_t)&t1;
+	get_kthread(test_kthread, ep, 0x1FFFF);
+	ep = (uint32_t)&t2;
+	get_kthread(test2_kthread, ep, 0x2FFFF);
+	Output("\nESP (Pre): %x", get_esp());
+	boot_kthread->stack_pointer = get_esp();
+	current_kthread = boot_kthread;
+	new_kthread = test_kthread;
+	__asm__ volatile("int 0x31");
+	Output("\nESP (Post): %x", get_esp());
 	//Loop forever until interrupted.
+	kernel_loop();
 	for(;;);
+	Output("What are we doing here?");
+	return 1; //should never get here!
 }
 
-void print_hello()
+void kernel_loop()
 {
-	BOCHS_BP();
-	OutputAt("Hello, I'm from a thread! :D", 1, 1);
+	Output("\nESP (Loop): %x", get_esp());
+	for (;;);
+}
+
+void t1()
+{
+	Output("\nThread 1");
+	Output("\nESP (Thread): %x", get_esp());
+	current_kthread = test_kthread;
+	new_kthread = test2_kthread;
+	__asm__ volatile("int 0x31");
+}
+
+void t2()
+{
+	Output("\nThread 2");
+	Output("\nESP (Thread): %x", get_esp());
+	current_kthread = test2_kthread;
+	new_kthread = boot_kthread;
+	__asm__ volatile("int 0x31");
 }
 
 int GetMemoryCount()
@@ -458,6 +490,12 @@ void DumpRegisters(isr_registers_t* regs)
 	Output(" | FS: 0x%x", regs->fs);
 	Output(" | GS: 0x%x", regs->gs);
 	Output("\nEFLAGS: 0x%x", regs->eflags);
+}
+
+void KernelThreadSwap(isr_registers_t* regs)
+{
+	Output("\nThread Swap via int 0x31!");
+	switch_kthread(current_kthread, new_kthread);
 }
 
 void ClearString(char* string, size_t length)

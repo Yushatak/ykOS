@@ -3,9 +3,9 @@ global ctxt_sw
 [BITS 32]
 ctxt_sw:
 pushad
-lea eax, [esp+36]
+lea eax, [esp+36d]
 mov [eax],esp
-mov eax,[esp+40]
+mov eax,[esp+40d]
 mov esp,eax
 popad
 ret
