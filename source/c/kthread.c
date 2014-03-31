@@ -16,20 +16,6 @@ extern void* kernel_end;
 extern void* stack_start;
 extern void ctxt_sw(void** oldStack, void* newStack);
 
-void construct_boot_kthread(kthread_t* store_at)
-{
-	kthread_t* kt = store_at;
-	kt->stack_top = (uint32_t)&kernel_end; //Stack goes from stack_start to kernel_end
-	//kt->stack_base = (uint32_t)&stack_start;
-	uint32_t ep = (uint32_t)&kernel_loop;
-	kt->entry_point = ep;
-	uint32_t* sp = (uint32_t*)get_esp();
-	sp--;
-	*sp = ep;
-	sp-=8;
-	kt->stack_pointer = (uint32_t)sp;
-}
-
 void get_kthread(void* store_at, uint32_t entry_point, uint32_t stack_top)
 {
 	kthread_t* kt = (kthread_t*)store_at;

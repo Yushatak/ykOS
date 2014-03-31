@@ -204,41 +204,18 @@ int main(multiboot_info_t* mbi)
 	
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);
+	
+	//Set up kernel boot thread.
 	uint32_t ep = (uint32_t)&kernel_loop;
 	get_kthread(boot_kthread, ep, (uint32_t)&kernel_end);
-	ep = (uint32_t)&t1;
-	get_kthread(test_kthread, ep, 0x1FFFF);
-	ep = (uint32_t)&t2;
-	get_kthread(test2_kthread, ep, 0x2FFFF);
-	Output("\nESP (Pre): %x", get_esp());
-	boot_kthread->stack_pointer = get_esp();
-	switch_kthread(boot_kthread, test_kthread);
-	Output("\nESP (Post): %x", get_esp());
-	//Loop forever until interrupted.
-	kernel_loop();
-	for(;;);
-	Output("What are we doing here?");
+	switch_kthread(boot_kthread, boot_kthread);
+	
 	return 1; //should never get here!
 }
 
 void kernel_loop()
 {
-	Output("\nESP (Loop): %x", get_esp());
 	for (;;);
-}
-
-void t1()
-{
-	Output("\nThread 1");
-	Output("\nESP (Thread): %x", get_esp());
-	switch_kthread(test_kthread, test2_kthread);
-}
-
-void t2()
-{
-	Output("\nThread 2");
-	Output("\nESP (Thread): %x", get_esp());
-	switch_kthread(test2_kthread, boot_kthread);
 }
 
 int GetMemoryCount()
@@ -254,6 +231,13 @@ void Interrupt(isr_registers_t* regs)
 	if (intHandlers[regs->intvec] != 0)
 	{
 		((isr_t)intHandlers[regs->intvec])(regs);
+	}
+	else if (regs->intvec < 0x20 || regs->intvec > 0x31)
+	{
+		Output("\nUnhandled Interrupt 0x%x!", regs->intvec);
+		Output("\nFault At EIP: 0x%x", regs->eip);
+		BOCHS_BP();
+		__asm__ volatile("hlt");
 	}
 	
 	//if (regs.intvec >= 0x20 && regs.intvec <= 0x2F)
@@ -881,10 +865,64 @@ inline uint8_t inb(uint16_t port)
 	return ret;
 }
 
+inline void halt()
+{
+	__asm__ volatile("hlt");
+}
+
+inline uint32_t get_eax()
+{
+	uint32_t ret = 0;
+	__asm__ volatile ("mov %0, eax" : "=b"(ret));
+	return ret;
+}
+
+inline uint32_t get_ebx()
+{
+	uint32_t ret = 0;
+	__asm__ volatile ("mov %0, ebx" : "=a"(ret));
+	return ret;
+}
+
+inline uint32_t get_ecx()
+{
+	uint32_t ret = 0;
+	__asm__ volatile ("mov %0, eax" : "=a"(ret));
+	return ret;
+}
+
+inline uint32_t get_edx()
+{
+	uint32_t ret = 0;
+	__asm__ volatile ("mov %0, edx" : "=a"(ret));
+	return ret;
+}
+
 inline uint32_t get_esp()
 {
 	uint32_t ret = 0;
 	__asm__ volatile ("mov %0, esp" : "=a"(ret));
+	return ret;
+}
+
+inline uint32_t get_ebp()
+{
+	uint32_t ret = 0;
+	__asm__ volatile ("mov %0, ebp" : "=a"(ret));
+	return ret;
+}
+
+inline uint32_t get_esi()
+{
+	uint32_t ret = 0;
+	__asm__ volatile ("mov %0, esi" : "=a"(ret));
+	return ret;
+}
+
+inline uint32_t get_edi()
+{
+	uint32_t ret = 0;
+	__asm__ volatile ("mov %0, edi" : "=a"(ret));
 	return ret;
 }
 

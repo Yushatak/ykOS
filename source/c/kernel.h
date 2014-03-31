@@ -190,19 +190,24 @@ void memFillW(void* address, int length, uint16_t value);
 void streamToHex(void* stream, void* hex, size_t limit);
 void outb(uint16_t port, uint8_t val);
 uint8_t inb(uint16_t port);
+uint32_t get_eax();
+uint32_t get_ebx();
+uint32_t get_ecx();
+uint32_t get_edx();
 uint32_t get_esp();
-uint32_t get_eip();
+uint32_t get_ebp();
+uint32_t get_esi();
+uint32_t get_edi();
 uint32_t get_cr0();
 uint32_t get_cr2();
 uint32_t get_cr3();
 uint32_t get_cr4();
+void halt();
 //uint32_t get_cr8();
 void ClearString(char* string, size_t length);
 void Dump();
 void WaitKey();
 int GetMemoryCount();
-void t1();
-void t2();
 void kernel_loop();
 
 //Handlers

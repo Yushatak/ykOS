@@ -16,6 +16,5 @@ typedef struct kthread
 } kthread_t;
 
 //Function Declarations
-void construct_boot_kthread(kthread_t* store_at);
 void get_kthread(void* store_at, uint32_t entry_point, uint32_t stack_top);
 void switch_kthread(kthread_t* ckt, kthread_t* kt);
