@@ -212,9 +212,7 @@ int main(multiboot_info_t* mbi)
 	get_kthread(test2_kthread, ep, 0x2FFFF);
 	Output("\nESP (Pre): %x", get_esp());
 	boot_kthread->stack_pointer = get_esp();
-	current_kthread = boot_kthread;
-	new_kthread = test_kthread;
-	__asm__ volatile("int 0x31");
+	switch_kthread(boot_kthread, test_kthread);
 	Output("\nESP (Post): %x", get_esp());
 	//Loop forever until interrupted.
 	kernel_loop();
@@ -233,18 +231,14 @@ void t1()
 {
 	Output("\nThread 1");
 	Output("\nESP (Thread): %x", get_esp());
-	current_kthread = test_kthread;
-	new_kthread = test2_kthread;
-	__asm__ volatile("int 0x31");
+	switch_kthread(test_kthread, test2_kthread);
 }
 
 void t2()
 {
 	Output("\nThread 2");
 	Output("\nESP (Thread): %x", get_esp());
-	current_kthread = test2_kthread;
-	new_kthread = boot_kthread;
-	__asm__ volatile("int 0x31");
+	switch_kthread(test2_kthread, boot_kthread);
 }
 
 int GetMemoryCount()
