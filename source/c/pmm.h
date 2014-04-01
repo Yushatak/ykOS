@@ -13,8 +13,8 @@ This contains declarations for the functions to manage and provide allocation/de
 #include <stddef.h>
 
 //Variables
-static uint32_t free_pages = 0;
-static uint32_t* current_page;
+extern uint32_t free_pages;
+uint32_t* current_page;
 
 //Function Definitions
 void pmm_free(void* page);

@@ -119,15 +119,11 @@ int main(multiboot_info_t* boot_mbi)
 			{
 				uint32_t base = COMBINE_16_32(mm->base_addr_high, mm->base_addr_low);
 				uint32_t size = COMBINE_16_32(mm->length_high, mm->length_low);
-				Output("\nBlock Found!");
 				if (base > 0 && mm->type == 1)
 				{
-					Output("\nProcessing Block..");
 					pmm_claim((uint32_t*)base, size);
 				}
-				else Output("\nBlock Skipped..");
 			}
-			Output("\nClaimed Pages: %d", free_pages);
 		}
 		else
 		{
@@ -285,8 +281,9 @@ void CommandParser()
 	{
 		Output("\nLow: %dKB", mem_low);
 		Output("\nHigh: %dKB", mem_high);
-		Output("\n\nTotal: %dKB", mem_total);
-		Output("\n\nStack: 0x%x-0x%x", &stack_end, &stack_start);
+		Output("\nTotal: %dKB", mem_total);
+		Output("\nFree: %dKB (%d%%)", free_pages * 4, (free_pages * 4)/mem_total);
+		Output("\nKernel Stack: 0x%x-0x%x", &stack_end, &stack_start);
 	}
 	else if (StringCompare(cmdbuffer, "dump"))
 	{
@@ -530,6 +527,9 @@ void Output(const char *source, ...)
 					ptr=*arg++;
 					if (!ptr)
 						ptr = "NULL";
+				case '%':
+					OutputChar('%');
+					break;
 				string:
 					while(*ptr)
 						OutputChar(*ptr++);
