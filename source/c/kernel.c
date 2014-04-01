@@ -279,11 +279,17 @@ void CommandParser()
 	}
 	else if (StringCompare(cmdbuffer, "mem"))
 	{
+		Output("---------------\nPhysical Memory\n---------------");
 		Output("\nLow: %dKB", mem_low);
 		Output("\nHigh: %dKB", mem_high);
 		Output("\nTotal: %dKB", mem_total);
-		Output("\nFree: %dKB (%d%%)", free_pages * 4, (free_pages * 4)/mem_total);
-		Output("\nKernel Stack: 0x%x-0x%x", &stack_end, &stack_start);
+		Output("\nFree: %dKB (%d%%)", free_pages * 4,  (uint32_t)(free_pages*4*100.0/mem_total));
+		uint32_t stack_used = ((uint32_t)&stack_start-get_esp());
+		uint32_t stack_total = ((uint32_t)&stack_start-(uint32_t)&stack_end);
+		uint32_t stack_free = stack_total-stack_used;
+		Output("\n------------\nKernel Stack\n------------");
+		Output("\nTotal: %dB", stack_total);
+		Output("\nFree: %dB (%d%%)", stack_free, (uint32_t)(stack_free*100.0/stack_total));
 	}
 	else if (StringCompare(cmdbuffer, "dump"))
 	{
@@ -508,6 +514,7 @@ void Output(const char *source, ...)
 		if (CursorX == ScreenColumns - 1) Scroll();
 		if (c == '%')
 		{
+			ClearString(buffer, 32);
 			char* ptr;
 			c = *source++;
 			switch (c)

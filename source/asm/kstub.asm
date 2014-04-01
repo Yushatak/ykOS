@@ -31,6 +31,7 @@ stack_start:
 section .text
 global kmain
 kmain:
+fninit
 mov esp,stack_start
 push ebx ;multiboot info
 extern main
