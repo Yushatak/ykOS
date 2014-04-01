@@ -14,7 +14,7 @@ Kernel Memory Map
 0x00000000-0x00100000 - First 1MB (owned by kernel)
 0x00100000-0x00400000 - Kernel (including kernel stack, IDT, GDT, and extra space for growth)
 0x00400000-0x00500000 - Virtual Memory Table
-0x00500000-0x00600000 - Physical Memory Table
+0x00500000-0x00600000 - Free
 0x00600000-0x00700000 - Kernel Thread Table
 */
 #include <stdint.h>
@@ -25,13 +25,16 @@ Kernel Memory Map
 #include "memory.h"
 #include "idt.h"
 #include "kthread.h"
-#include "vmm.h"
 #include "pmm.h"
+#include "vmm.h"
 #include "commands.h"
 
-//Macro Functions - Try to use inline when more appropriate, rather than adding lots of these!
+//Macro Functions - Be sure to use inline when appropriate.
 #define CHECK_FLAG(flags, bit) ((flags) & (1 << (bit)))
 #define BOCHS_BP() __asm__ volatile ("xchg bx,bx");
+#define COMBINE_8_16(high, low) ((uint16_t)high << 8 | (uint16_t)low)
+#define COMBINE_16_32(high, low) ((uint32_t)high << 16 | (uint32_t)low)
+#define COMBINE_32_64(high, low) ((uint64_t)high << 32 | (uint64_t)low)
 
 //String Declarations
 char message[] = "32-Bit Kernel Loaded";
@@ -51,7 +54,9 @@ int CursorX = 0;
 int CursorY = 23;
 int ScreenColumns = 80;
 int ScreenRows = 25;
-int Memory = 0;
+int mem_total = 0;
+int mem_low = 0;
+int mem_high = 0;
 const int VGABaseAddress = 0xB8000;
 const int VGALimit = 0xBFFFF;
 int BytesPerChar = 2;
@@ -63,18 +68,18 @@ bool alt = false;
 static volatile bool wait = false;
 int promptLine = 24;
 kthread_t* boot_kthread = (kthread_t*)0x600000;
-kthread_t* test_kthread = (kthread_t*)0x601000;
-kthread_t* test2_kthread = (kthread_t*)0x602000;
-
-kthread_t* current_kthread;
-kthread_t* new_kthread;
+multiboot_info_t* mbi;
 
 //Externs
 extern void* kernel_end;
+extern void* stack_start;
+extern void* stack_end;
 
 //Entry Point
-int main(multiboot_info_t* mbi)
+int main(multiboot_info_t* boot_mbi)
 {		
+	mbi = boot_mbi;
+	
 	//Memory Setup
 	A20();
 	LinearGDT();	
@@ -94,101 +99,35 @@ int main(multiboot_info_t* mbi)
 	
 	//Generate IDT
 	generateIDT();
-	//ClearScreen();
+	ClearScreen();
 	registerISR(0x21, &KeyboardHandler);
 	registerISR(0x0E, &PageFaultHandler);
 	registerISR(0x30, &DumpRegisters);
-	registerISR(0x31, &KernelThreadSwap);
 	
 	//Memory Map
 	if (CHECK_FLAG(mbi->flags, 1)) 
 	{
-		Output("Memory Flags OK!");
-		char temp[48] = {0};
-		intToDecChars(mbi->mem_lower, temp);
-		Output("\nLow Memory: ");
-		Output(temp);
-		ClearString(temp, 48);
-		intToDecChars(mbi->mem_upper, temp);
-		Output("KB\nHigh Memory: ");
-		Output(temp);		
-		Output("KB");
-		ClearString(temp, 48);
-		Memory = mbi->mem_lower + mbi->mem_upper;
+		mem_low = mbi->mem_lower;
+		mem_high = mbi->mem_upper;
+		mem_total = mbi->mem_lower + mbi->mem_upper;
 		if (CHECK_FLAG(mbi->flags, 6))
 		{
-			Output("\nMemory Map OK!");
-			uintToHexChars(mbi->mmap_addr, temp);
-			Output("\nMap Address: 0x");
-			Output(temp);
-			ClearString(temp, 48);
-			Output("\nMap Length: ");
-			intToDecChars(mbi->mmap_length, temp);
-			Output(temp);
-			ClearString(temp, 48);
-			Output("KB\nMap End: 0x");
-			uintToHexChars(mbi->mmap_addr + mbi->mmap_length, temp);
-			Output(temp);
-			ClearString(temp, 48);
 			multiboot_memory_map_t* mm_end = (multiboot_memory_map_t*)(mbi->mmap_addr + mbi->mmap_length);
-			int areaCount = 0;
 			for (multiboot_memory_map_t* mm = (multiboot_memory_map_t*)(mbi->mmap_addr);
 				mm < mm_end;
 				mm = (multiboot_memory_map_t*)((unsigned int)mm + mm->size + sizeof(unsigned int)))
 			{
-				Output("\nArea #");
-				uintToHexChars(++areaCount, temp);
-				Output(temp);
-				/*ClearString(temp, 48);
-				Output(": Entry Size 0x");
-				uintToHexChars(mm->size, temp);
-				Output(temp);*/
-				ClearString(temp, 48);
-				Output(": 0x");
-				if (mm->base_addr_high > 0)
+				uint32_t base = COMBINE_16_32(mm->base_addr_high, mm->base_addr_low);
+				uint32_t size = COMBINE_16_32(mm->length_high, mm->length_low);
+				Output("\nBlock Found!");
+				if (base > 0 && mm->type == 1)
 				{
-					uintToHexChars(mm->base_addr_high, temp);
-					Output(temp);
-					ClearString(temp, 48);
+					Output("\nProcessing Block..");
+					pmm_claim((uint32_t*)base, size);
 				}
-				uintToHexChars(mm->base_addr_low, temp);
-				Output(temp);
-				ClearString(temp, 48);
-				Output("->0x");
-				if (((mm->length_high + mm->base_addr_high) > 0xFF && (mm->length_low + mm->base_addr_low) > 0xFF)
-					||
-				((mm->length_high + mm->base_addr_high) == 0 && (mm->length_low + mm->base_addr_low) == 0))
-				{
-					Output("100000000");
-				}
-				else
-				{
-					if ((mm->length_high + mm->base_addr_high) > 0)
-					{
-						uintToHexChars(mm->length_high + mm->base_addr_high, temp);
-						Output(temp);
-						ClearString(temp, 48);
-					}
-					uintToHexChars(mm->length_low + mm->base_addr_low, temp);
-					Output(temp);
-				}
-				ClearString(temp, 48);
-				Output(" (0x");
-				if (mm->length_high > 0)
-				{
-					uintToHexChars(mm->length_high, temp);
-					Output(temp);
-					ClearString(temp, 48);
-				}
-				uintToHexChars(mm->length_low, temp);
-				Output(temp);
-				ClearString(temp, 48);
-				Output(", Type 0x");
-				uintToHexChars(mm->type, temp);
-				Output(temp);
-				Output(")");
-				//WaitKey();
+				else Output("\nBlock Skipped..");
 			}
+			Output("\nClaimed Pages: %d", free_pages);
 		}
 		else
 		{
@@ -198,7 +137,7 @@ int main(multiboot_info_t* mbi)
 	}
 	else 
 	{
-		Output("\nInvalid Flags!");
+		Output("\nInvalid Flags (0x%x)!", mbi->flags);
 		Dump();
 	}
 	
@@ -207,10 +146,12 @@ int main(multiboot_info_t* mbi)
 	
 	//Set up kernel boot thread.
 	uint32_t ep = (uint32_t)&kernel_loop;
-	get_kthread(boot_kthread, ep, (uint32_t)&kernel_end);
+	//Purposefully discarding ESP, resetting registers, etc. to make the thread state as expected.
+	get_kthread(boot_kthread, ep, (uint32_t)&stack_start);
+	//Load new thread state.
 	switch_kthread(boot_kthread, boot_kthread);
 	
-	return 1; //should never get here!
+	return 1; //should never get here - EVER!
 }
 
 void kernel_loop()
@@ -220,7 +161,7 @@ void kernel_loop()
 
 int GetMemoryCount()
 {
-	return Memory;
+	return mem_total;
 }
 
 void Interrupt(isr_registers_t* regs)
@@ -232,7 +173,7 @@ void Interrupt(isr_registers_t* regs)
 	{
 		((isr_t)intHandlers[regs->intvec])(regs);
 	}
-	else if (regs->intvec < 0x20 || regs->intvec > 0x31)
+	else if (regs->intvec < 0x20 || regs->intvec > 0x30)
 	{
 		Output("\nUnhandled Interrupt 0x%x!", regs->intvec);
 		Output("\nFault At EIP: 0x%x", regs->eip);
@@ -256,6 +197,7 @@ void Interrupt(isr_registers_t* regs)
 
 void Dump()
 {
+	Output("\n");
 	__asm__ volatile ("int 0x30");
 }
 
@@ -332,7 +274,7 @@ void CommandParser()
 	}
 	else if (StringCompare(cmdbuffer, "palloc"))
 	{
-		Output("Allocated Page: 0x%x", palloc(1));
+		Output("Allocated Page: 0x%x", vmm_alloc(1));
 	}
 	else if (StringCompare(cmdbuffer, "wait"))
 	{
@@ -341,7 +283,10 @@ void CommandParser()
 	}
 	else if (StringCompare(cmdbuffer, "mem"))
 	{
-		Output("Memory: %dKB", Memory);
+		Output("\nLow: %dKB", mem_low);
+		Output("\nHigh: %dKB", mem_high);
+		Output("\n\nTotal: %dKB", mem_total);
+		Output("\n\nStack: 0x%x-0x%x", &stack_end, &stack_start);
 	}
 	else if (StringCompare(cmdbuffer, "dump"))
 	{
@@ -468,12 +413,6 @@ void DumpRegisters(isr_registers_t* regs)
 	Output(" | FS: 0x%x", regs->fs);
 	Output(" | GS: 0x%x", regs->gs);
 	Output("\nEFLAGS: 0x%x", regs->eflags);
-}
-
-void KernelThreadSwap(isr_registers_t* regs)
-{
-	Output("\nThread Swap via int 0x31!");
-	switch_kthread(current_kthread, new_kthread);
 }
 
 void ClearString(char* string, size_t length)

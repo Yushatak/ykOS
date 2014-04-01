@@ -12,5 +12,11 @@ This contains declarations for the functions to manage and provide allocation/de
 #include <stdbool.h>
 #include <stddef.h>
 
+//Variables
+static uint32_t free_pages = 0;
+static uint32_t* current_page;
+
 //Function Definitions
-uint32_t malloc(size_t amount);
+void pmm_free(void* page);
+uint32_t pmm_alloc();
+void pmm_claim(uint32_t* address, size_t size);

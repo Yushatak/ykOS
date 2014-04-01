@@ -87,7 +87,7 @@ void cmd_Check(char* args)
 	int address = charsToInt(args);
 	Output(args);
 	Output(" is ");
-	if (check(address))
+	if (vmm_check(address))
 	{
 		Output("free.");
 	}
@@ -97,7 +97,7 @@ void cmd_Check(char* args)
 void cmd_Free(char* args)
 {
 	int address = charsToInt(args);
-	free(address);
+	vmm_free(address);
 	Output(args);
 	Output(" has been freed.");
 }

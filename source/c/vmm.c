@@ -23,7 +23,7 @@ then reserve 10% if 64-bit isn't supported, otherwise use long mode
 const int VME_COUNT = 32768;
 vm_table_t* VMT = (void*)0x500000;
 
-uint32_t palloc(uint16_t tid)
+uint32_t vmm_alloc(uint16_t tid)
 {
 	for (unsigned int i = 0; i < VME_COUNT; i++)
 	{
@@ -37,13 +37,13 @@ uint32_t palloc(uint16_t tid)
 	return 0; //Failure to retrieve page. none free!
 }
 
-void free(uint32_t vaddr)
+void vmm_free(uint32_t vaddr)
 {
 	vm_entry_t* VME = &(VMT->entries[(vaddr-0xFF000000)/0x1000]);
 	VME->owner = 0;
 }
 
-bool check(uint32_t vaddr)
+bool vmm_check(uint32_t vaddr)
 {
 	vm_entry_t* VME = &(VMT->entries[(vaddr-0xFF000000)/0x1000]);
 	return (VME->owner == 0);

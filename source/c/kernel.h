@@ -204,6 +204,7 @@ uint32_t get_cr3();
 uint32_t get_cr4();
 void halt();
 //uint32_t get_cr8();
+//uint32_t combine_16_32(high, low);
 void ClearString(char* string, size_t length);
 void Dump();
 void WaitKey();

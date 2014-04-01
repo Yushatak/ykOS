@@ -22,7 +22,8 @@ dd cFlags
 dd cChecksum
 
 section .stack
-global stack_start
+global stack_start, stack_end
+stack_end:
 align 4
 times 16384 db 0
 stack_start:

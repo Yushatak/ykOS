@@ -110,7 +110,6 @@ IRQ 45, 13 ;0x2D
 IRQ 46, 14 ;0x2E
 IRQ 47, 15 ;0x2F
 ISR_NOEC 48 ;0x30 - Debug Software Interrupt
-ISR_NOEC 49 ;0x31 - Kernel Thread Swap Software Interrupt
 
 ISR7:
         push eax
