@@ -24,9 +24,9 @@ void pmm_free(void* page)
 	free_pages++;
 }
 
-uint32_t pmm_alloc()
+uint32_t* pmm_alloc()
 {
-	uint32_t ret = (uint32_t)current_page;
+	uint32_t* ret = current_page;
 	current_page = (uint32_t*)*current_page;
 	free_pages--;
 	return ret;
@@ -34,11 +34,11 @@ uint32_t pmm_alloc()
 
 void pmm_claim(uint32_t* address, size_t size)
 {
-	int num_pages = size/4096;
+	int num_pages = size/0x1000;
 	for (int i = 0; i < num_pages; i++)
 	{
-		uint32_t* new_page = address + (i*4096);
-		if (!(new_page > (uint32_t*)0xFFFFF && new_page < (uint32_t*)0x500000))
+		uint32_t* new_page = address + (i*0x1000);
+		if ((uint32_t)new_page > 0x6FFFFF && (uint32_t)new_page < (GetMemoryCount()*1024))
 		{
 			*current_page = (uint32_t)new_page;
 			current_page = new_page;

@@ -5,99 +5,43 @@ Written by J. "Yushatak" S.
 Copyright Yushatak 2014
 All Rights Reserved
 
-Contains functions related to setting up and managing memory.
+Contains convenience functions which wrap the PMM, VMM, and paging into a simpler interface.
 */
-
+#include <stddef.h>
 #include <stdint.h>
 #include "memory.h"
 #include "kernel.h"
-extern void* kernel_end;
+#include "paging.h"
+#include "pmm.h"
+#include "vmm.h"
 
-//Constants
-const int page_size = 0x1000;
-const int entry_size = 32768;
-
-void EnablePaging()
+uint32_t* get_address_space(size_t size_in_bytes)
 {
-	//Generate Page Directory, Tables, & Entries for 4GB Identity Mapped
-	uint32_t* PGD = (uint32_t*)&kernel_end;
+	Output("\nAddress space of %d bytes requested.", size_in_bytes);
+	size_t size_in_pages = size_in_bytes/0x1000;
+	Output("\nThis will consist of %d pages.", size_in_pages);
+	uint32_t num_tables = size_in_pages/1024;
+	num_tables++; //Always need one table!
+	Output("\nIt will require %d page tables.", num_tables);
+	uint32_t* PGD = pmm_alloc();
+	Output("\nThe page directory will be in a page at 0x%x.", (uint32_t)PGD);
 	uint32_t address = 0;
-	for (int i = 0; i < 1024; i++)
+	for (int i = 0; i < num_tables; i++)
 	{
 		uint32_t* PGT = PGD + 1024 + (entry_size * i);
-		for (uint32_t j = 0; j < 1024; j++)
+		uint32_t entry_max = 1024;
+		//If this is the last table, use the remainder if applicable.
+		if (i + 1 == num_tables && (size_in_pages%1024 > 0)) entry_max = size_in_pages%1024;	
+		Output("\nNew page table (#%d) at 0x%x with %d entries.", i, (uint32_t)PGT, entry_max);		
+		for (uint32_t j = 0; j < entry_max; j++)
 		{
-			PGT[j] = address | 0x3; //Kernel Page
+			uint32_t* page = pmm_alloc();
+			PGT[j] = (uint32_t)page | 0x3; //Kernel Page
+			Output("\nMapped 0x%x to physical page at 0x%x (entry #%d).", address, (uint32_t)page, j);
 			address += page_size;
 		}
 		PGD[i] = (uint32_t)PGT; 
 		PGD[i] |= 0x3; //Kernel Table
 	}
-	__asm__ volatile ("mov cr3, %0" :: "b"(PGD));
-	__asm__ volatile ("mov cr0, %0" :: "b"(get_cr0() | 0x80000000));
-}
-
-inline uint32_t table_index(uint32_t vaddr)
-{
-	return (vaddr/4096)/1024;
-}
-
-inline uint32_t page_index(uint32_t vaddr)
-{
-	return (vaddr/4096)%1024;
-}
-
-void Disable_PTE(uint32_t vaddr)
-{
-	Set_Flags_PTE(vaddr, 0x7FFFFFFF);
-}
-
-void Enable_PTE(uint32_t vaddr)
-{
-	Set_Flags_PTE(vaddr, 0x80000000);
-}
-
-void Set_Flags_PTE(uint32_t vaddr, uint32_t flags)
-{
-	uint32_t* PGD = (uint32_t*)&kernel_end;
-	page_table_t* PGT = (void*)(PGD[table_index(vaddr)] & 0xFFFFF000);
-	uint32_t old = PGT->entries[page_index(vaddr)];
-	PGT->entries[page_index(vaddr)] = old & flags;
-	reload_cr3();
-}
-
-void Map_PTE(uint32_t vaddr, uint32_t paddr, uint32_t flags)
-{
-	Set_PTE(vaddr, paddr & flags);
-}
-
-uint32_t Get_PTE(uint32_t vaddr)
-{
-	uint32_t* PGD = (uint32_t*)&kernel_end;
-	page_table_t* PGT = (void*)(PGD[table_index(vaddr)] & 0xFFFFF000);
-	uint32_t ret = PGT->entries[page_index(vaddr)];
-	return ret;
-}
-
-void Set_PTE(uint32_t vaddr, uint32_t value)
-{
-	uint32_t* PGD = (uint32_t*)&kernel_end;
-	page_table_t* PGT = (void*)(PGD[table_index(vaddr)] & 0xFFFFF000);
-	PGT->entries[page_index(vaddr)] = value;	
-	reload_cr3();
-}
-
-void Mirror_PTE(uint32_t vaddr, uint32_t vaddr2)
-{
-	Set_PTE(vaddr, Get_PTE(vaddr2));
-}
-
-inline void invlpg(uint32_t vaddr)
-{
-	__asm__ volatile ("invlpg [%0]" :: "a"(vaddr));
-}
-
-inline void reload_cr3()
-{
-	__asm__ volatile ("mov cr3, %0" :: "b"(get_cr3()));
+	return PGD;
 }

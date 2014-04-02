@@ -23,7 +23,6 @@ typedef struct vm_table
 } vm_table_t;
 
 //Functions
-//uint32_t malloc(uint32_t pageCount);
 uint32_t vmm_alloc(uint16_t tid);
 void vmm_free(uint32_t vaddr);
 bool vmm_check(uint32_t vaddr);

@@ -8,9 +8,10 @@ INPUT(obj/ctxt.o)
 INPUT(obj/kernel.o)
 INPUT(obj/idt.o)
 INPUT(obj/commands.o)
-INPUT(obj/memory.o)
+INPUT(obj/paging.o)
 INPUT(obj/vmm.o)
 INPUT(obj/pmm.o)
+INPUT(obj/memory.o)
 INPUT(obj/kthread.o)
 SECTIONS
 {

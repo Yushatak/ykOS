@@ -18,5 +18,5 @@ uint32_t* current_page;
 
 //Function Definitions
 void pmm_free(void* page);
-uint32_t pmm_alloc();
+uint32_t* pmm_alloc();
 void pmm_claim(uint32_t* address, size_t size);

@@ -22,11 +22,12 @@ Kernel Memory Map
 #include <stddef.h>
 #include "kernel.h"
 #include "multiboot.h"
-#include "memory.h"
+#include "paging.h"
 #include "idt.h"
 #include "kthread.h"
 #include "pmm.h"
 #include "vmm.h"
+#include "memory.h"
 #include "commands.h"
 
 //Macro Functions - Be sure to use inline when appropriate.
@@ -112,14 +113,14 @@ int main(multiboot_info_t* boot_mbi)
 		mem_total = mbi->mem_lower + mbi->mem_upper;
 		if (CHECK_FLAG(mbi->flags, 6))
 		{
-			multiboot_memory_map_t* mm_end = (multiboot_memory_map_t*)(mbi->mmap_addr + mbi->mmap_length);
-			for (multiboot_memory_map_t* mm = (multiboot_memory_map_t*)(mbi->mmap_addr);
+			memory_map_t* mm_end = (memory_map_t*)(mbi->mmap_addr + mbi->mmap_length);
+			for (memory_map_t* mm = (memory_map_t*)(mbi->mmap_addr);
 				mm < mm_end;
-				mm = (multiboot_memory_map_t*)((unsigned int)mm + mm->size + sizeof(unsigned int)))
+				mm = (memory_map_t*)((unsigned int)mm + mm->size + sizeof(unsigned int)))
 			{
 				uint32_t base = COMBINE_16_32(mm->base_addr_high, mm->base_addr_low);
 				uint32_t size = COMBINE_16_32(mm->length_high, mm->length_low);
-				if (base > 0 && mm->type == 1)
+				if (mm->type == 1)
 				{
 					pmm_claim((uint32_t*)base, size);
 				}
@@ -137,8 +138,16 @@ int main(multiboot_info_t* boot_mbi)
 		Dump();
 	}
 	
+	//Flush faulty pages.
+	pmm_alloc();
+	pmm_alloc();
+	
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);
+	
+	Output("\nWe have %d free pages.", free_pages);
+	uint32_t* address_space = get_address_space(16384);
+	Output("\nReceived an address space with the page table at 0x%x.", (uint32_t)address_space);
 	
 	//Set up kernel boot thread.
 	uint32_t ep = (uint32_t)&kernel_loop;
