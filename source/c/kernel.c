@@ -24,7 +24,6 @@ Kernel Memory Map
 #include "idt.h"
 #include "kthread.h"
 #include "pmm.h"
-#include "vmm.h"
 #include "memory.h"
 #include "commands.h"
 
@@ -144,6 +143,9 @@ int main(multiboot_info_t* boot_mbi)
 	SetCursor(sizeof(prompt) - 1, promptLine);
 	
 	uint32_t* address_space = get_address_space(16384);
+	uint32_t* address_space_2 = get_address_space(8192);
+	uint32_t* address_space_3 = get_address_space(4096);
+	uint32_t* address_space_4 = get_address_space(32768);
 	
 	//Set up kernel boot thread.
 	uint32_t ep = (uint32_t)&kernel_loop;
