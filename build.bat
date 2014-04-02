@@ -27,7 +27,7 @@ i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -st
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -m32 -c source/c/idt.c -o obj/idt.o
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -c source/c/commands.c -o obj/commands.o
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -c source/c/paging.c -o obj/paging.o
-i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -c source/c/vmm.c -o obj/vmm.o
+rem i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -c source/c/vmm.c -o obj/vmm.o
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -c source/c/pmm.c -o obj/pmm.o
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -c source/c/memory.c -o obj/memory.o
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -c source/c/kthread.c -o obj/kthread.o

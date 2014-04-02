@@ -113,6 +113,7 @@ int main(multiboot_info_t* boot_mbi)
 		mem_total = mbi->mem_lower + mbi->mem_upper;
 		if (CHECK_FLAG(mbi->flags, 6))
 		{
+			current_page = NULL;
 			memory_map_t* mm_end = (memory_map_t*)(mbi->mmap_addr + mbi->mmap_length);
 			for (memory_map_t* mm = (memory_map_t*)(mbi->mmap_addr);
 				mm < mm_end;
@@ -120,7 +121,7 @@ int main(multiboot_info_t* boot_mbi)
 			{
 				uint32_t base = COMBINE_16_32(mm->base_addr_high, mm->base_addr_low);
 				uint32_t size = COMBINE_16_32(mm->length_high, mm->length_low);
-				if (mm->type == 1)
+				if (base > 0 && size > 0 && mm->type == 1)
 				{
 					pmm_claim((uint32_t*)base, size);
 				}
@@ -138,16 +139,13 @@ int main(multiboot_info_t* boot_mbi)
 		Dump();
 	}
 	
-	//Flush faulty pages.
-	pmm_alloc();
-	pmm_alloc();
+	//pmm_alloc(); //Flush null page.
+	//pmm_alloc();
 	
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);
 	
-	Output("\nWe have %d free pages.", free_pages);
 	uint32_t* address_space = get_address_space(16384);
-	Output("\nReceived an address space with the page table at 0x%x.", (uint32_t)address_space);
 	
 	//Set up kernel boot thread.
 	uint32_t ep = (uint32_t)&kernel_loop;
@@ -292,7 +290,7 @@ void CommandParser()
 		Output("\nLow: %dKB", mem_low);
 		Output("\nHigh: %dKB", mem_high);
 		Output("\nTotal: %dKB", mem_total);
-		Output("\nFree: %dKB (%d%%)", free_pages * 4,  (uint32_t)(free_pages*4*100.0/mem_total));
+		Output("\nFree: %dKB (%d%%, %d pages)", free_pages * 4,  (uint32_t)(free_pages*4*100.0/mem_total), free_pages);
 		uint32_t stack_used = ((uint32_t)&stack_start-get_esp());
 		uint32_t stack_total = ((uint32_t)&stack_start-(uint32_t)&stack_end);
 		uint32_t stack_free = stack_total-stack_used;

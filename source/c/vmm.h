@@ -1,3 +1,4 @@
+/*UNUSED*/
 /*
 Virtual Memory Manager Header (vmm.h)
 Part of the ykOS Project

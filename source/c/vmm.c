@@ -1,3 +1,4 @@
+/*UNUSED*/
 /*
 Virtual Memory Manager (vmm.c)
 Part of the ykOS Project

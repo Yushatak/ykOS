@@ -37,10 +37,10 @@ void pmm_claim(uint32_t* address, size_t size)
 	int num_pages = size/0x1000;
 	for (int i = 0; i < num_pages; i++)
 	{
-		uint32_t* new_page = address + (i*0x1000);
-		if ((uint32_t)new_page > 0x6FFFFF && (uint32_t)new_page < (GetMemoryCount()*1024))
+		uint32_t* new_page = address + (i * (0x1000/sizeof(uint32_t)));
+		if ((uint32_t)new_page > 0x6FFFFF && (uint32_t)new_page < (GetMemoryCount()*1024) && new_page != NULL)
 		{
-			*current_page = (uint32_t)new_page;
+			*new_page = (uint32_t)current_page;
 			current_page = new_page;
 			free_pages++;
 		}
