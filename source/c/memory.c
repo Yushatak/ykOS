@@ -21,7 +21,7 @@ uint32_t* get_address_space(size_t size_in_bytes)
 	size_t size_in_pages = size_in_bytes/0x1000;
 	Output("\nThis will consist of %d pages.", size_in_pages);
 	uint32_t num_tables = size_in_pages/1024;
-	if (num_tables%1024 > 0) num_tables++; //Always need one table!
+	if (size_in_pages%1024 > 0) num_tables++; //Always need one table!
 	Output("\nIt will require %d page tables.", num_tables);
 	uint32_t* PGD = pmm_alloc();
 	Output("\nThe page directory will be in a page at 0x%x.", (uint32_t)PGD);
