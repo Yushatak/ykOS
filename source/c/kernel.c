@@ -142,11 +142,6 @@ int main(multiboot_info_t* boot_mbi)
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);
 	
-	uint32_t* address_space = get_address_space(16384);
-	uint32_t* address_space_2 = get_address_space(8192);
-	uint32_t* address_space_3 = get_address_space(4096);
-	uint32_t* address_space_4 = get_address_space(32768);
-	
 	//Set up kernel boot thread.
 	uint32_t ep = (uint32_t)&kernel_loop;
 	//Purposefully discarding ESP, resetting registers, etc. to make the thread state as expected.
@@ -290,7 +285,7 @@ void CommandParser()
 		Output("\nLow: %dKB", mem_low);
 		Output("\nHigh: %dKB", mem_high);
 		Output("\nTotal: %dKB", mem_total);
-		Output("\nFree: %dKB (%d%%, %d pages)", free_pages * 4,  (uint32_t)(free_pages*4*100.0/mem_total), free_pages);
+		Output("\nAvailable: %dKB (%d%%, %d pages)", free_pages * 4,  (uint32_t)(free_pages*4*100.0/mem_total), free_pages);
 		uint32_t stack_used = ((uint32_t)&stack_start-get_esp());
 		uint32_t stack_total = ((uint32_t)&stack_start-(uint32_t)&stack_end);
 		uint32_t stack_free = stack_total-stack_used;
