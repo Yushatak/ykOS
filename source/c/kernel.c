@@ -254,7 +254,7 @@ void CommandParser()
 		if (splitPos == 0) Output("Invalid Argument(s).\n");
 		else cmd_Page(splitPos);
 	}
-	else if (StartsWith(cmdbuffer, "free "))
+	/*else if (StartsWith(cmdbuffer, "free "))
 	{
 		if (splitPos == 0) Output("Invalid Argument(s).\n");
 		else cmd_Free(splitPos);
@@ -263,7 +263,7 @@ void CommandParser()
 	{
 		if (splitPos == 0) Output("Invalid Argument(s).\n");
 		else cmd_Check(splitPos);
-	}
+	}*/
 	else if (StringCompare(cmdbuffer, "clear") || StringCompare(cmdbuffer, "cls"))
 	{
 		ClearScreen();
@@ -275,10 +275,10 @@ void CommandParser()
 	{
 		cmd_Creg();
 	}
-	else if (StringCompare(cmdbuffer, "palloc"))
+	/*else if (StringCompare(cmdbuffer, "palloc"))
 	{
 		Output("Allocated Page: 0x%x", vmm_alloc(1));
-	}
+	}*/
 	else if (StringCompare(cmdbuffer, "wait"))
 	{
 		WaitKey();

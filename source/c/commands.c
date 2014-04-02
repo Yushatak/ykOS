@@ -83,7 +83,7 @@ void cmd_Page(char* args)
 	}
 }
 
-void cmd_Check(char* args)
+/*void cmd_Check(char* args)
 {
 	int address = charsToInt(args);
 	Output(args);
@@ -101,4 +101,4 @@ void cmd_Free(char* args)
 	vmm_free(address);
 	Output(args);
 	Output(" has been freed.");
-}
+}*/
