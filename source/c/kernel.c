@@ -13,9 +13,7 @@ Kernel Memory Map
 
 0x00000000-0x00100000 - First 1MB (owned by kernel)
 0x00100000-0x00400000 - Kernel (including kernel stack, IDT, GDT, and extra space for growth)
-0x00400000-0x00500000 - Virtual Memory Table
-0x00500000-0x00600000 - Free
-0x00600000-0x00700000 - Kernel Thread Table
+0x00400000-0x00450000 - Kernel Thread Table
 */
 #include <stdint.h>
 #include <stdbool.h>
@@ -68,7 +66,7 @@ bool ctrl = false;
 bool alt = false;
 static volatile bool wait = false;
 int promptLine = 24;
-kthread_t* boot_kthread = (kthread_t*)0x600000;
+kthread_t* boot_kthread = (kthread_t*)0x400000;
 multiboot_info_t* mbi;
 
 //Externs
