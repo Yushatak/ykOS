@@ -215,4 +215,4 @@ void kernel_loop();
 void KeyboardHandler(isr_registers_t* regs);
 void PageFaultHandler(isr_registers_t* regs);
 void DumpRegisters(isr_registers_t* regs);
-void KernelThreadSwap(isr_registers_t* regs);
+void TimerHandler(isr_registers_t* regs);

@@ -12,7 +12,7 @@ This is the bulk of the kernel.
 Kernel Memory Map
 
 0x00000000-0x00100000 - First 1MB (owned by kernel)
-0x00100000-0x00400000 - Kernel (including kernel stack, IDT, GDT, and extra space for growth)
+0x00100000-0x00400000 - Kernel (including 16K kernel stack, IDT, GDT, and extra space for growth)
 0x00400000-0x00450000 - Kernel Thread Table
 */
 #include <stdint.h>
@@ -55,6 +55,7 @@ int ScreenRows = 25;
 int mem_total = 0;
 int mem_low = 0;
 int mem_high = 0;
+int ticks = 0;
 const int VGABaseAddress = 0xB8000;
 const int VGALimit = 0xBFFFF;
 int BytesPerChar = 2;
@@ -95,9 +96,16 @@ int main(multiboot_info_t* boot_mbi)
 	outb(0x21, 0x00);
 	outb(0xA1, 0x00);
 	
+	//Initialize Timer
+	uint8_t num = (uint8_t)(1193180/100);
+	outb(0x43, 0x36);
+	outb(0x40, num & 0xFF);
+	outb(0x40, num >> 8);
+	
 	//Generate IDT
 	generateIDT();
 	ClearScreen();
+	registerISR(0x20, &TimerHandler);
 	registerISR(0x21, &KeyboardHandler);
 	registerISR(0x0E, &PageFaultHandler);
 	registerISR(0x30, &DumpRegisters);
@@ -136,9 +144,6 @@ int main(multiboot_info_t* boot_mbi)
 		Dump();
 	}
 	
-	//pmm_alloc(); //Flush null page.
-	//pmm_alloc();
-	
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);
 	
@@ -173,8 +178,9 @@ void Interrupt(isr_registers_t* regs)
 	}
 	else if (regs->intvec < 0x20 || regs->intvec > 0x30)
 	{
-		Output("\nUnhandled Interrupt 0x%x!", regs->intvec);
+		Output("\nUnhandled Interrupt %d (0x%x)!", regs->intvec, regs->intvec);
 		Output("\nFault At EIP: 0x%x", regs->eip);
+		Dump();
 		BOCHS_BP();
 		__asm__ volatile("hlt");
 	}
@@ -249,16 +255,6 @@ void CommandParser()
 		if (splitPos == 0) Output("Invalid Argument(s).\n");
 		else cmd_Page(splitPos);
 	}
-	/*else if (StartsWith(cmdbuffer, "free "))
-	{
-		if (splitPos == 0) Output("Invalid Argument(s).\n");
-		else cmd_Free(splitPos);
-	}
-	else if (StartsWith(cmdbuffer, "check "))
-	{
-		if (splitPos == 0) Output("Invalid Argument(s).\n");
-		else cmd_Check(splitPos);
-	}*/
 	else if (StringCompare(cmdbuffer, "clear") || StringCompare(cmdbuffer, "cls"))
 	{
 		ClearScreen();
@@ -270,10 +266,6 @@ void CommandParser()
 	{
 		cmd_Creg();
 	}
-	/*else if (StringCompare(cmdbuffer, "palloc"))
-	{
-		Output("Allocated Page: 0x%x", vmm_alloc(1));
-	}*/
 	else if (StringCompare(cmdbuffer, "wait"))
 	{
 		WaitKey();
@@ -296,6 +288,10 @@ void CommandParser()
 	else if (StringCompare(cmdbuffer, "dump"))
 	{
 		Dump();
+	}
+	else if (StringCompare(cmdbuffer, "ticks"))
+	{
+		Output("\nTicks: %d", ticks);
 	}
 	else 
 	{
@@ -391,6 +387,12 @@ void PageFaultHandler(isr_registers_t* regs)
 	Output("\n\nHalting...");
 	__asm__ volatile("hlt");
 	for (;;);
+}
+
+void TimerHandler(isr_registers_t* regs)
+{
+	ticks++;
+	if (ticks % 100 == 0) Output("Tock."); //This line causes 0xD GPF :D
 }
 
 void DumpRegisters(isr_registers_t* regs)
