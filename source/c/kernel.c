@@ -56,6 +56,7 @@ int mem_total = 0;
 int mem_low = 0;
 int mem_high = 0;
 int ticks = 0;
+int tocks = 0;
 const int VGABaseAddress = 0xB8000;
 const int VGALimit = 0xBFFFF;
 int BytesPerChar = 2;
@@ -97,9 +98,9 @@ int main(multiboot_info_t* boot_mbi)
 	outb(0xA1, 0x00);
 	
 	//Initialize Timer
-	uint8_t num = (uint8_t)(1193180/100);
+	unsigned int num = 1193180/100;
 	outb(0x43, 0x36);
-	outb(0x40, num & 0xFF);
+	outb(0x40, (uint8_t)num & 0xFF);
 	outb(0x40, num >> 8);
 	
 	//Generate IDT
@@ -169,8 +170,12 @@ int GetMemoryCount()
 
 void Interrupt(isr_registers_t* regs)
 {	
-	if (regs->intvec >= 0x28) outb(0xA0, 0x20); //Reset Slave PIC
-	outb(0x20, 0x20); //Reset Master PIC
+	//If it's anything but the timer, reset the PICs immediately.
+	if (regs->intvec != 0x20)
+	{
+		if (regs->intvec >= 0x28) outb(0xA0, 0x20); //Reset Slave PIC
+		outb(0x20, 0x20); //Reset Master PIC
+	}
 	
 	if (intHandlers[regs->intvec] != 0)
 	{
@@ -184,7 +189,6 @@ void Interrupt(isr_registers_t* regs)
 		BOCHS_BP();
 		__asm__ volatile("hlt");
 	}
-	
 	//if (regs.intvec >= 0x20 && regs.intvec <= 0x2F)
 	//{
 		/*This is an IRQ*/
@@ -292,6 +296,7 @@ void CommandParser()
 	else if (StringCompare(cmdbuffer, "ticks"))
 	{
 		Output("\nTicks: %d", ticks);
+		Output("\nTocks: %d", tocks);
 	}
 	else 
 	{
@@ -392,7 +397,10 @@ void PageFaultHandler(isr_registers_t* regs)
 void TimerHandler(isr_registers_t* regs)
 {
 	ticks++;
-	if (ticks % 100 == 0) Output("Tock."); //This line causes 0xD GPF :D
+	if (ticks % 1000 == 0) tocks++;
+	
+	//Since we don't reset immediately for the timer, reset the applicable PIC now.
+	outb(0x20, 0x20); //Reset Master PIC
 }
 
 void DumpRegisters(isr_registers_t* regs)
