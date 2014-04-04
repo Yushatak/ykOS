@@ -13,6 +13,7 @@ INPUT(obj/paging.o)
 INPUT(obj/pmm.o)
 INPUT(obj/memory.o)
 INPUT(obj/kthread.o)
+INPUT(obj/scheduler.o)
 SECTIONS
 {
 	. = 0x100000;

@@ -12,15 +12,14 @@ for kernel functions.
 #include <stdbool.h>
 #include <stddef.h>
 
-struct idt_entry_struct
+typedef struct idt_entry_struct
 {
 	uint16_t base_lo;
 	uint16_t selector;
 	uint8_t unused;
 	uint8_t flags;
 	uint16_t base_hi;
-} __attribute__((packed));
-typedef struct idt_entry_struct idt_entry_t;
+} idt_entry_t;
 
 typedef struct isr_registers
 {
@@ -32,13 +31,7 @@ typedef struct isr_registers
 
 typedef void (*isr_t)(isr_registers_t*);
 void registerISR(uint8_t idx, isr_t ISR);
-
-typedef struct mbi
-{
-	uint32_t ignore_me;
-	uint32_t mem_lower;
-	uint32_t mem_upper;
-} mbi_t;
+bool ring_init;
 
 static const char keycode[128] =
 {
@@ -202,14 +195,15 @@ uint32_t get_cr0();
 uint32_t get_cr2();
 uint32_t get_cr3();
 uint32_t get_cr4();
-void halt();
 //uint32_t get_cr8();
-//uint32_t combine_16_32(high, low);
+void halt();
 void ClearString(char* string, size_t length);
 void Dump();
 void WaitKey();
 int GetMemoryCount();
 void kernel_loop();
+void TestFunction();
+void TestFunction2();
 
 //Handlers
 void KeyboardHandler(isr_registers_t* regs);

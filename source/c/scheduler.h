@@ -1,0 +1,35 @@
+#include <stdint.h>
+#include <stdbool.h>
+
+//Structs
+typedef struct thread
+{
+	uint16_t tid;
+	uint8_t priority;
+	uint32_t stack_top, stack_pointer, entry_point;
+	uint32_t page_table;
+	bool sleeping;
+	uint32_t ticks;
+	uint8_t ring;
+	void* previous_thread;
+	void* next_thread;
+} thread_t;
+
+typedef struct ring
+{
+	uint8_t rid;
+	uint32_t thread_count;
+	thread_t* top_thread;
+} ring_t;
+
+//Variable Declarations
+ring_t** ring;
+thread_t* current_thread;
+
+//Function Declarations
+void initialize_rings();
+void initialize_thread(thread_t* t);
+void swap_task();
+void switch_context(thread_t* othread, thread_t* nthread);
+void sleep_thread(thread_t* t);
+void wake_thread(thread_t* t);

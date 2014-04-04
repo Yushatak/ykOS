@@ -26,6 +26,7 @@ Kernel Memory Map
 #include "pmm.h"
 #include "memory.h"
 #include "commands.h"
+#include "scheduler.h"
 
 //Macro Functions - Be sure to use inline when appropriate.
 #define CHECK_FLAG(flags, bit) ((flags) & (1 << (bit)))
@@ -67,7 +68,7 @@ bool ctrl = false;
 bool alt = false;
 static volatile bool wait = false;
 int promptLine = 24;
-kthread_t* boot_kthread = (kthread_t*)0x400000;
+thread_t* kernel_thread = (thread_t*)0x820000;
 multiboot_info_t* mbi;
 
 //Externs
@@ -79,6 +80,8 @@ extern void* stack_end;
 int main(multiboot_info_t* boot_mbi)
 {		
 	mbi = boot_mbi;
+	
+	ring_init = false;
 	
 	//Memory Setup
 	A20();
@@ -148,19 +151,16 @@ int main(multiboot_info_t* boot_mbi)
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);
 	
-	//Set up kernel boot thread.
-	uint32_t ep = (uint32_t)&kernel_loop;
-	//Purposefully discarding ESP, resetting registers, etc. to make the thread state as expected.
-	get_kthread(boot_kthread, ep, (uint32_t)&stack_start);
-	//Load new thread state.
-	switch_kthread(boot_kthread, boot_kthread);
-	
+	//Initialize threading rings.
+	initialize_rings();
+	//Begin infinite loop.
+	kernel_loop();
 	return 1; //should never get here - EVER!
 }
 
 void kernel_loop()
 {
-	for (;;);
+	for (;;) { Output("\nMain Loop"); };
 }
 
 int GetMemoryCount()
@@ -289,6 +289,15 @@ void CommandParser()
 		Output("\nTotal: %dB", stack_total);
 		Output("\nFree: %dB (%d%%)", stack_free, (uint32_t)(stack_free*100.0/stack_total));
 	}
+	else if (StringCompare(cmdbuffer, "proc") || StringCompare(cmdbuffer, "tasklist"))
+	{
+		Output("---------------\nCurrent Thread\n---------------");
+		Output("\nTicks: %d", current_thread->ticks);
+		Output("\n------------\nThread Rings\n------------");
+		Output("\nRing 0: %d Thread(s)", ring[0]->thread_count);
+		Output("\nRing 1: %d Thread(s)", ring[1]->thread_count);
+		Output("\nRing 2: %d Thread(s)", ring[2]->thread_count);
+	}
 	else if (StringCompare(cmdbuffer, "dump"))
 	{
 		Dump();
@@ -303,6 +312,16 @@ void CommandParser()
 		Output("Invalid Command.");
 	}
 	memFill(cmdbuffer, sizeof(cmdbuffer), 0);
+}
+
+void TestFunction()
+{
+	for (;;) { Output("\nTicks: %d", ticks); };
+}
+
+void TestFunction2()
+{
+	for (;;) { Output("\nTocks: %d", tocks); };
 }
 
 void KeyboardHandler(isr_registers_t* regs)
@@ -397,10 +416,11 @@ void PageFaultHandler(isr_registers_t* regs)
 void TimerHandler(isr_registers_t* regs)
 {
 	ticks++;
+	current_thread->ticks++;
 	if (ticks % 1000 == 0) tocks++;
-	
 	//Since we don't reset immediately for the timer, reset the applicable PIC now.
 	outb(0x20, 0x20); //Reset Master PIC
+	if (ticks % 10 == 0) swap_task();
 }
 
 void DumpRegisters(isr_registers_t* regs)
@@ -693,8 +713,6 @@ void uintToHexChars(unsigned int val, char* out)
 void uintToDecChars(unsigned int val, char* out)
 {
 	size_t p = 0;
-	//out[p++] = '0';
-	//out[p++] = 'x';
 	size_t digits = 1;
 	for (unsigned int length = val; length >= 10; length /= 10) digits++;
 	for (size_t i = digits; i != 0; i--)
@@ -704,7 +722,6 @@ void uintToDecChars(unsigned int val, char* out)
 		val /= 10;
 	}
 	p += digits;
-	//out[p] = 0x0;
 }
 
 void intToDecChars(int val, char* out)
@@ -715,8 +732,6 @@ void intToDecChars(int val, char* out)
 		out[p] = '-';
 		p++;
 	}
-	//out[p++] = '0';
-	//out[p++] = 'x';
 	size_t digits = 1;
 	for (int length = val; length >= 10; length /= 10) digits++;
 	for (size_t i = digits; i != 0; i--)
@@ -726,7 +741,6 @@ void intToDecChars(int val, char* out)
 		val /= 10;
 	}
 	p += digits;
-	//out[p] = 0x0;
 }
 
 uint32_t charsToInt(char* in)
