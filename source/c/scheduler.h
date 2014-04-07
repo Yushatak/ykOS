@@ -13,6 +13,7 @@ typedef struct thread
 	uint8_t ring;
 	void* previous_thread;
 	void* next_thread;
+	bool interrupt_state;
 } thread_t;
 
 typedef struct ring
@@ -29,7 +30,6 @@ thread_t* current_thread;
 //Function Declarations
 void initialize_rings();
 void initialize_thread(thread_t* t);
-void swap_task();
-void switch_context(thread_t* othread, thread_t* nthread);
+void next_thread();
 void sleep_thread(thread_t* t);
 void wake_thread(thread_t* t);

@@ -66,6 +66,7 @@ isr_t intHandlers[256];
 bool shift = false;
 bool ctrl = false;
 bool alt = false;
+bool kloop = false;
 static volatile bool wait = false;
 int promptLine = 24;
 thread_t* kernel_thread = (thread_t*)0x820000;
@@ -153,6 +154,8 @@ int main(multiboot_info_t* boot_mbi)
 	
 	//Initialize threading rings.
 	initialize_rings();
+	//Enable Interrupts
+	sti();
 	//Begin infinite loop.
 	kernel_loop();
 	return 1; //should never get here - EVER!
@@ -160,7 +163,7 @@ int main(multiboot_info_t* boot_mbi)
 
 void kernel_loop()
 {
-	for (;;) { Output("\nMain Loop"); };
+	for (;;);
 }
 
 int GetMemoryCount()
@@ -170,12 +173,8 @@ int GetMemoryCount()
 
 void Interrupt(isr_registers_t* regs)
 {	
-	//If it's anything but the timer, reset the PICs immediately.
-	if (regs->intvec != 0x20)
-	{
-		if (regs->intvec >= 0x28) outb(0xA0, 0x20); //Reset Slave PIC
-		outb(0x20, 0x20); //Reset Master PIC
-	}
+	if (regs->intvec >= 0x28) outb(0xA0, 0x20); //Reset Slave PIC
+	outb(0x20, 0x20); //Reset Master PIC
 	
 	if (intHandlers[regs->intvec] != 0)
 	{
@@ -189,18 +188,12 @@ void Interrupt(isr_registers_t* regs)
 		BOCHS_BP();
 		__asm__ volatile("hlt");
 	}
-	//if (regs.intvec >= 0x20 && regs.intvec <= 0x2F)
-	//{
-		/*This is an IRQ*/
-		//Output(irqLabel, 0, 24);
-		//OutputHexByte(regs.intvec, 4, 24);
-	//}
-	//else
-	//{
-		/*This is an ISR*/
-		//Output(isrLabel, 0, 23);
-		//OutputHexByte(regs.intvec, 4, 23);
-	//}
+}
+
+void rst_int_flg()
+{
+	if (current_thread->interrupt_state) sti();
+	else cli();
 }
 
 void Dump()
@@ -316,12 +309,12 @@ void CommandParser()
 
 void TestFunction()
 {
-	for (;;) { Output("\nTicks: %d", ticks); };
+	for (;;) { kloop = false; }//Output("\nTicks: %d", ticks); };
 }
 
 void TestFunction2()
 {
-	for (;;) { Output("\nTocks: %d", tocks); };
+	for (;;) { Output("2"); }//Output("\nTocks: %d", tocks); };
 }
 
 void KeyboardHandler(isr_registers_t* regs)
@@ -418,9 +411,7 @@ void TimerHandler(isr_registers_t* regs)
 	ticks++;
 	current_thread->ticks++;
 	if (ticks % 1000 == 0) tocks++;
-	//Since we don't reset immediately for the timer, reset the applicable PIC now.
-	outb(0x20, 0x20); //Reset Master PIC
-	if (ticks % 10 == 0) swap_task();
+	if (ticks % 10 == 0) next_thread();
 }
 
 void DumpRegisters(isr_registers_t* regs)
@@ -932,3 +923,25 @@ inline uint32_t get_cr4()
 	__asm__ volatile ("mov %0, cr8" : "=a"(ret));
 	return ret;
 }*/
+
+void cli()
+{
+	current_thread->interrupt_state = false;
+	__asm__ volatile("cli");
+}
+
+inline void untracked_cli()
+{
+	__asm__ volatile("cli");
+}
+
+void sti()
+{
+	current_thread->interrupt_state = true;
+	__asm__ volatile("sti");
+}
+
+inline void untracked_sti()
+{
+	__asm__ volatile("sti");
+}

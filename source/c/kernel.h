@@ -204,6 +204,11 @@ int GetMemoryCount();
 void kernel_loop();
 void TestFunction();
 void TestFunction2();
+void cli();
+void sti();
+void untracked_cli();
+void untracked_sti();
+void Restore_Interrupt_Flag();
 
 //Handlers
 void KeyboardHandler(isr_registers_t* regs);
