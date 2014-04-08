@@ -203,7 +203,6 @@ void WaitKey();
 int GetMemoryCount();
 void kernel_loop();
 void TestFunction();
-void TestFunction2();
 void cli();
 void sti();
 void untracked_cli();

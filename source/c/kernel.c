@@ -69,7 +69,6 @@ bool alt = false;
 bool kloop = false;
 static volatile bool wait = false;
 int promptLine = 24;
-thread_t* kernel_thread = (thread_t*)0x820000;
 multiboot_info_t* mbi;
 
 //Externs
@@ -301,6 +300,10 @@ void CommandParser()
 		Output("\nTicks: %d", ticks);
 		Output("\nTocks: %d", tocks);
 	}
+	else if (StringCompare(cmdbuffer, "swap"))
+	{
+		next_thread();
+	}
 	else 
 	{
 		Output("Invalid Command.");
@@ -310,12 +313,8 @@ void CommandParser()
 
 void TestFunction()
 {
-	for (;;) { kloop = false; }//Output("\nTicks: %d", ticks); };
-}
-
-void TestFunction2()
-{
-	for (;;) { Output("2"); }//Output("\nTocks: %d", tocks); };
+	Output("\ntloop");
+	for (;;);//Output("\nTicks: %d", ticks); };
 }
 
 void KeyboardHandler(isr_registers_t* regs)
@@ -412,7 +411,7 @@ void TimerHandler(isr_registers_t* regs)
 	ticks++;
 	current_thread->ticks++;
 	if (ticks % 1000 == 0) tocks++;
-	if (ticks % 10 == 0) next_thread();
+	//if (ticks % 10 == 0) next_thread();
 }
 
 void DumpRegisters(isr_registers_t* regs)

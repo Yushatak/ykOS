@@ -35,8 +35,8 @@ void initialize_rings()
 	boot_thread->priority = 0;
 	boot_thread->page_table = get_cr3();
 	boot_thread->ticks = 0;
-	boot_thread->stack_top = (uint32_t)&stack_start;
-	boot_thread->stack_pointer = get_esp();
+	//boot_thread->stack_top = (uint32_t)&stack_start;
+	boot_thread->stack_top = 0x810000;
 	boot_thread->interrupt_state = true;
 	uint32_t ep = (uint32_t)&kernel_loop;
 	boot_thread->entry_point = ep;
@@ -52,7 +52,6 @@ void initialize_rings()
 	test_thread->page_table = get_cr3();
 	test_thread->ticks = 0;
 	test_thread->stack_top = 0x800000;
-	test_thread->stack_pointer = 0x800000 - sizeof(uint32_t);
 	test_thread->interrupt_state = true;
 	ep = (uint32_t)&TestFunction;
 	//*((uint32_t*)(0x800000 - sizeof(uint32_t))) = ep;
@@ -78,7 +77,8 @@ void initialize_rings()
 void initialize_thread(thread_t* t)
 {
 	Output("\nInitializing thread with stack at 0x%x", t->stack_top);
-	uint32_t* sp = (uint32_t*)t->stack_top - sizeof(uint32_t);
+	uint32_t* sp = (uint32_t*)t->stack_top;
+	sp--;
 	Output("\nStoring EP at 0x%x (value 0x%x)", sp, &bounce);
 	*sp = (uint32_t)&bounce;
 	for (int i = 0; i < 8; i++) //zero out register values and adjust stack pointer
