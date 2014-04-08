@@ -300,10 +300,6 @@ void CommandParser()
 		Output("\nTicks: %d", ticks);
 		Output("\nTocks: %d", tocks);
 	}
-	else if (StringCompare(cmdbuffer, "swap"))
-	{
-		next_thread();
-	}
 	else 
 	{
 		Output("Invalid Command.");
@@ -411,7 +407,7 @@ void TimerHandler(isr_registers_t* regs)
 	ticks++;
 	current_thread->ticks++;
 	if (ticks % 1000 == 0) tocks++;
-	//if (ticks % 10 == 0) next_thread();
+	if (ticks % 10 == 0) next_thread();
 }
 
 void DumpRegisters(isr_registers_t* regs)
