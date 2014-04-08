@@ -198,7 +198,7 @@ uint32_t get_cr4();
 //uint32_t get_cr8();
 void halt();
 void ClearString(char* string, size_t length);
-void Dump();
+void panic();
 void WaitKey();
 int GetMemoryCount();
 void kernel_loop();

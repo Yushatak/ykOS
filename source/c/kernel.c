@@ -139,13 +139,13 @@ int main(multiboot_info_t* boot_mbi)
 		else
 		{
 			Output("\nInvalid Memory Map!");
-			Dump();
+			panic();
 		}
 	}
 	else 
 	{
 		Output("\nInvalid Flags (0x%x)!", mbi->flags);
-		Dump();
+		panic();
 	}
 	
 	OutputAt(prompt, 0, promptLine);
@@ -184,7 +184,7 @@ void Interrupt(isr_registers_t* regs)
 	{
 		Output("\nUnhandled Interrupt %d (0x%x)!", regs->intvec, regs->intvec);
 		Output("\nFault At EIP: 0x%x", regs->eip);
-		Dump();
+		panic();
 		BOCHS_BP();
 		__asm__ volatile("hlt");
 	}
@@ -196,7 +196,7 @@ void rst_int_flg()
 	else cli();
 }
 
-void Dump()
+void panic()
 {
 	Output("\n");
 	__asm__ volatile ("int 0x30");
@@ -293,7 +293,7 @@ void CommandParser()
 	}
 	else if (StringCompare(cmdbuffer, "dump"))
 	{
-		Dump();
+		panic();
 	}
 	else if (StringCompare(cmdbuffer, "ticks"))
 	{

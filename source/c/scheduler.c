@@ -36,7 +36,7 @@ void initialize_rings()
 	boot_thread->page_table = get_cr3();
 	boot_thread->ticks = 0;
 	//boot_thread->stack_top = (uint32_t)&stack_start;
-	boot_thread->stack_top = 0x810000;
+	boot_thread->stack_top = 0x800000;
 	boot_thread->interrupt_state = true;
 	uint32_t ep = (uint32_t)&kernel_loop;
 	boot_thread->entry_point = ep;
@@ -51,7 +51,7 @@ void initialize_rings()
 	test_thread->priority = 0;
 	test_thread->page_table = get_cr3();
 	test_thread->ticks = 0;
-	test_thread->stack_top = 0x800000;
+	test_thread->stack_top = 0x810000;
 	test_thread->interrupt_state = true;
 	ep = (uint32_t)&TestFunction;
 	//*((uint32_t*)(0x800000 - sizeof(uint32_t))) = ep;
@@ -98,7 +98,7 @@ void bounce()
 	__asm__ volatile("sti");
 	((entry_point_t)current_thread->entry_point)();
 	Output("\nThread #%d exited unexpectedly.", current_thread->tid);
-	Dump();
+	panic();
 }
 
 void assign_ring(thread_t* t, ring_t* r)
@@ -135,7 +135,7 @@ void next_thread()
 			if (old_thread->page_table != current_thread->page_table) 
 			{
 				__asm__ volatile ("mov cr3, %0" :: "b"(current_thread->page_table));
-				__asm__ volatile ("mov cr0, %0" :: "b"(get_cr0() | 0x80000000));
+				//__asm__ volatile ("mov cr0, %0" :: "b"(get_cr0() | 0x80000000));
 			}
 			ctxt_sw((void**)&old_thread->stack_pointer, (void*)current_thread->stack_pointer);
 		}
