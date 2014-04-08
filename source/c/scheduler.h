@@ -1,3 +1,13 @@
+/*
+Thread Scheduler Header (scheduler.h)
+Part of the ykOS Project
+Written by J. "Yushatak" S.
+Copyright Yushatak 2014
+All Rights Reserved
+
+Functions for managing thread creation, manipulation, and scheduling.
+*/
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -23,6 +33,9 @@ typedef struct ring
 	thread_t* top_thread;
 } ring_t;
 
+//Typedefs
+typedef void (*entry_point_t)(void);
+
 //Variable Declarations
 ring_t** ring;
 thread_t* current_thread;
@@ -33,3 +46,4 @@ void initialize_thread(thread_t* t);
 void next_thread();
 void sleep_thread(thread_t* t);
 void wake_thread(thread_t* t);
+void bounce();

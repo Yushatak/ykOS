@@ -1,4 +1,12 @@
+/*
+Thread Scheduler (scheduler.c)
+Part of the ykOS Project
+Written by J. "Yushatak" S.
+Copyright Yushatak 2014
+All Rights Reserved
 
+Functions for managing thread creation, manipulation, and scheduling.
+*/
 
 #include <stdint.h>
 #include <stddef.h>
@@ -10,6 +18,7 @@
 
 //Defines
 #define CHECK_FLAG(flags, bit) ((flags) & (1 << (bit)))
+#define BOCHS_BP() __asm__ volatile ("xchg bx,bx");
 
 //Externs
 extern void ctxt_sw(void** oldStack, void* newStack);
@@ -68,14 +77,28 @@ void initialize_rings()
 
 void initialize_thread(thread_t* t)
 {
+	Output("\nInitializing thread with stack at 0x%x", t->stack_top);
 	uint32_t* sp = (uint32_t*)t->stack_top - sizeof(uint32_t);
-	*sp = t->entry_point;
+	Output("\nStoring EP at 0x%x (value 0x%x)", sp, &bounce);
+	*sp = (uint32_t)&bounce;
 	for (int i = 0; i < 8; i++) //zero out register values and adjust stack pointer
 	{
 		sp--;
 		*sp = 0;
 	}
 	t->stack_pointer = (uint32_t)sp;
+	Output("\nInitialized, current ESP=0x%x", get_esp());
+}
+
+void bounce()
+{
+	Output("\nBounce, current ESP=0x%x", get_esp());
+	//uint32_t* sp = (uint32_t*)current_thread->stack_top - sizeof(uint32_t);
+	//*sp = current_thread->entry_point;
+	__asm__ volatile("sti");
+	((entry_point_t)current_thread->entry_point)();
+	Output("\nThread #%d exited unexpectedly.", current_thread->tid);
+	Dump();
 }
 
 void assign_ring(thread_t* t, ring_t* r)

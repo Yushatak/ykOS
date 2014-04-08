@@ -155,7 +155,7 @@ int main(multiboot_info_t* boot_mbi)
 	//Initialize threading rings.
 	initialize_rings();
 	//Enable Interrupts
-	sti();
+	//sti();
 	//Begin infinite loop.
 	kernel_loop();
 	return 1; //should never get here - EVER!
@@ -163,6 +163,7 @@ int main(multiboot_info_t* boot_mbi)
 
 void kernel_loop()
 {
+	Output("\nkloop");
 	for (;;);
 }
 
