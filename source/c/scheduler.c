@@ -76,10 +76,8 @@ void initialize_rings()
 
 void initialize_thread(thread_t* t)
 {
-	Output("\nInitializing thread with stack at 0x%x", t->stack_top);
 	uint32_t* sp = (uint32_t*)t->stack_top;
 	sp--;
-	Output("\nStoring EP at 0x%x (value 0x%x)", sp, &bounce);
 	*sp = (uint32_t)&bounce;
 	for (int i = 0; i < 8; i++) //zero out register values and adjust stack pointer
 	{
@@ -87,14 +85,10 @@ void initialize_thread(thread_t* t)
 		*sp = 0;
 	}
 	t->stack_pointer = (uint32_t)sp;
-	Output("\nInitialized, current ESP=0x%x", get_esp());
 }
 
 void bounce()
 {
-	Output("\nBounce, current ESP=0x%x", get_esp());
-	//uint32_t* sp = (uint32_t*)current_thread->stack_top - sizeof(uint32_t);
-	//*sp = current_thread->entry_point;
 	__asm__ volatile("sti");
 	((entry_point_t)current_thread->entry_point)();
 	Output("\nThread #%d exited unexpectedly.", current_thread->tid);
@@ -131,12 +125,11 @@ void next_thread()
 		current_thread = current_thread->next_thread;
 		if (old_thread != current_thread)
 		{
-			Output("\nSwapping from thread #%d to #%d.", old_thread->tid, current_thread->tid);
 			if (old_thread->page_table != current_thread->page_table) 
 			{
 				__asm__ volatile ("mov cr3, %0" :: "b"(current_thread->page_table));
-				//__asm__ volatile ("mov cr0, %0" :: "b"(get_cr0() | 0x80000000));
 			}
+			Output("\nOld ESP Pointer: 0x%x", &old_thread->stack_pointer);
 			ctxt_sw((void**)&old_thread->stack_pointer, (void*)current_thread->stack_pointer);
 		}
 	}
