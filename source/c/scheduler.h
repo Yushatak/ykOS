@@ -16,11 +16,12 @@ typedef struct thread
 {
 	uint16_t tid;
 	uint8_t priority;
-	uint32_t stack_top, stack_pointer, entry_point;
+	uint32_t stack_top, stack_pointer;
+	uint32_t entry_point, eip;
 	uint32_t page_table;
 	bool sleeping;
-	uint32_t ticks;
-	uint8_t ring;
+	unsigned long ticks;
+	int ring;
 	void* previous_thread;
 	void* next_thread;
 	bool interrupt_state;
@@ -47,3 +48,4 @@ void next_thread();
 void sleep_thread(thread_t* t);
 void wake_thread(thread_t* t);
 void bounce();
+void assign_ring(thread_t* t, ring_t* r);

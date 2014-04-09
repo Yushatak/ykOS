@@ -36,10 +36,11 @@ void initialize_rings()
 	boot_thread->page_table = get_cr3();
 	boot_thread->ticks = 0;
 	//boot_thread->stack_top = (uint32_t)&stack_start;
-	boot_thread->stack_top = 0x800000;
+	boot_thread->stack_top = (uint32_t)pmm_alloc();
 	boot_thread->interrupt_state = true;
 	uint32_t ep = (uint32_t)&kernel_loop;
 	boot_thread->entry_point = ep;
+	boot_thread->eip = ep;
 	boot_thread->sleeping = false;
 	current_thread = boot_thread;
 	initialize_thread(boot_thread);
@@ -51,17 +52,17 @@ void initialize_rings()
 	test_thread->priority = 0;
 	test_thread->page_table = get_cr3();
 	test_thread->ticks = 0;
-	test_thread->stack_top = 0x810000;
+	test_thread->stack_top = (uint32_t)pmm_alloc();
 	test_thread->interrupt_state = true;
 	ep = (uint32_t)&TestFunction;
-	//*((uint32_t*)(0x800000 - sizeof(uint32_t))) = ep;
 	test_thread->entry_point = ep;
+	test_thread->eip = ep;
 	test_thread->sleeping = false;
-	test_thread->previous_thread = boot_thread;
-	test_thread->next_thread = boot_thread;
-	boot_thread->previous_thread = test_thread;
-	boot_thread->next_thread = test_thread;
 	initialize_thread(test_thread);
+	test_thread->next_thread = boot_thread;
+	test_thread->previous_thread = boot_thread;
+	boot_thread->next_thread = test_thread;
+	boot_thread->previous_thread = test_thread;
 	
 	ring[1] = (ring_t*)pmm_alloc();
 	ring[1]->rid = 1;
@@ -89,6 +90,10 @@ void initialize_thread(thread_t* t)
 
 void bounce()
 {
+	Output("\nBounce (#%d)", current_thread->tid);
+	uint32_t* sp = (uint32_t*)current_thread->stack_top;
+	sp--;
+	*sp = current_thread->eip;
 	__asm__ volatile("sti");
 	((entry_point_t)current_thread->entry_point)();
 	Output("\nThread #%d exited unexpectedly.", current_thread->tid);
@@ -110,7 +115,7 @@ void assign_ring(thread_t* t, ring_t* r)
 		t->ring = r->rid;
 		r->thread_count++;
 		//Add the thread to the new chain.
-		thread_t* top = ring[t->ring]->top_thread;
+		thread_t* top = ring[t->ring]->top_thread; //need to preserve old next and set as this one's next
 		top->next_thread = t;
 		t->previous_thread = top;
 	}
@@ -125,13 +130,14 @@ void next_thread()
 		current_thread = current_thread->next_thread;
 		if (old_thread != current_thread)
 		{
+			Output("\nSwitching from #%d to #%d.", old_thread->tid, current_thread->tid);
 			if (old_thread->page_table != current_thread->page_table) 
 			{
 				__asm__ volatile ("mov cr3, %0" :: "b"(current_thread->page_table));
 			}
-			Output("\nOld ESP Pointer: 0x%x", &old_thread->stack_pointer);
 			ctxt_sw((void**)&old_thread->stack_pointer, (void*)current_thread->stack_pointer);
 		}
+		else Output("\nSkipping a swap from #%d to #%d.", old_thread->tid, current_thread->tid);
 	}
 }
 
