@@ -17,7 +17,7 @@ typedef struct thread
 	uint16_t tid;
 	uint8_t priority;
 	uint32_t stack_top, stack_pointer;
-	uint32_t entry_point, eip;
+	uint32_t entry_point;
 	uint32_t page_table;
 	bool sleeping;
 	unsigned long ticks;

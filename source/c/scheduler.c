@@ -40,7 +40,6 @@ void initialize_rings()
 	boot_thread->interrupt_state = true;
 	uint32_t ep = (uint32_t)&kernel_loop;
 	boot_thread->entry_point = ep;
-	boot_thread->eip = ep;
 	boot_thread->sleeping = false;
 	current_thread = boot_thread;
 	initialize_thread(boot_thread);
@@ -56,7 +55,6 @@ void initialize_rings()
 	test_thread->interrupt_state = true;
 	ep = (uint32_t)&TestFunction;
 	test_thread->entry_point = ep;
-	test_thread->eip = ep;
 	test_thread->sleeping = false;
 	initialize_thread(test_thread);
 	test_thread->next_thread = boot_thread;
@@ -90,10 +88,9 @@ void initialize_thread(thread_t* t)
 
 void bounce()
 {
-	Output("\nBounce (#%d)", current_thread->tid);
-	uint32_t* sp = (uint32_t*)current_thread->stack_top;
-	sp--;
-	*sp = current_thread->eip;
+	//uint32_t* sp = (uint32_t*)current_thread->stack_top;
+	//sp--;
+	//*sp = current_thread->eip;
 	__asm__ volatile("sti");
 	((entry_point_t)current_thread->entry_point)();
 	Output("\nThread #%d exited unexpectedly.", current_thread->tid);
@@ -130,14 +127,13 @@ void next_thread()
 		current_thread = current_thread->next_thread;
 		if (old_thread != current_thread)
 		{
-			Output("\nSwitching from #%d to #%d.", old_thread->tid, current_thread->tid);
 			if (old_thread->page_table != current_thread->page_table) 
 			{
 				__asm__ volatile ("mov cr3, %0" :: "b"(current_thread->page_table));
 			}
+			*((uint32_t*)(old_thread->stack_pointer)) = (uint32_t)__builtin_return_address(0);
 			ctxt_sw((void**)&old_thread->stack_pointer, (void*)current_thread->stack_pointer);
 		}
-		else Output("\nSkipping a swap from #%d to #%d.", old_thread->tid, current_thread->tid);
 	}
 }
 
