@@ -152,8 +152,6 @@ int main(multiboot_info_t* boot_mbi)
 	
 	//Initialize threading rings.
 	initialize_rings();
-	//Enable Interrupts
-	//sti();
 	//Begin infinite loop.
 	kernel_loop();
 	return 1; //should never get here - EVER!
@@ -161,7 +159,6 @@ int main(multiboot_info_t* boot_mbi)
 
 void kernel_loop()
 {
-	Output("\nkloop");
 	for (;;);
 }
 
@@ -197,7 +194,7 @@ void rst_int_flg()
 
 void panic()
 {
-	Output("\n");
+	Output("\nKernel Panic!\n");
 	__asm__ volatile ("int 0x30");
 }
 
@@ -299,6 +296,10 @@ void CommandParser()
 		Output("\nTicks: %d", ticks);
 		Output("\nTocks: %d", tocks);
 	}
+	else if (StringCompare(cmdbuffer,"test"))
+	{
+		Output("\n%d", 0x100000000L);
+	}
 	else 
 	{
 		Output("Invalid Command.");
@@ -308,7 +309,6 @@ void CommandParser()
 
 void TestFunction()
 {
-	Output("\ntloop");
 	for (;;);//Output("\nTicks: %d", ticks); };
 }
 
@@ -532,19 +532,18 @@ void Output(const char *source, ...)
 		if (CursorX == ScreenColumns - 1) Scroll();
 		if (c == '%')
 		{
-			ClearString(buffer, 32);
 			char* ptr;
 			c = *source++;
 			switch (c)
 			{
 				case 'd':
-					intToDecChars(*((int*)arg++), buffer);
+					intToDecChars(*((int*)arg++), buffer, 32);
 					ptr=buffer;
 					goto string;
 					break;
 				case 'h':
 				case 'x':
-					uintToHexChars(*((int*)arg++), buffer);
+					uintToHexChars(*((int*)arg++), buffer, 32);
 					ptr=buffer;
 					goto string;
 					break;
@@ -560,7 +559,7 @@ void Output(const char *source, ...)
 						OutputChar(*ptr++);
 					break;
 				default:
-					OutputChar(*((int*)arg++));
+					//OutputChar(*((int*)arg++));
 					break;
 			}
 		}
@@ -602,7 +601,7 @@ void OutputCharAt(char c, int x, int y)
 void OutputHexByteAt(uint8_t byte, int x, int y)
 {
 	char Chars[3];
-	uintToHexChars(byte, Chars);
+	uintToHexChars(byte, Chars, 3);
 	Chars[2] = 0x0; //terminator
 	OutputAt(Chars, x, y);
 }
@@ -610,7 +609,7 @@ void OutputHexByteAt(uint8_t byte, int x, int y)
 void OutputHexByte(uint8_t byte)
 {
 	char Chars[3];
-	uintToHexChars(byte, Chars);
+	uintToHexChars(byte, Chars, 3);
 	Chars[2] = 0x0; //terminator
 	Output(Chars);
 }
@@ -649,7 +648,7 @@ void streamToHex(void* stream, void* hex, size_t limit)
 		//if (i+5 > limit) break;
 		if (*str == 0x0) break;
 		char result[2] = {0};
-		uintToHexChars(*str++, result);
+		uintToHexChars(*str++, result, 2);
 		//hex[i++] = '0'; //hex prefix
 		//hex[i++] = 'x';
 		out[i++] = result[0]; //actual hex
@@ -679,8 +678,9 @@ void uintToHexChars16(uint16_t i, char* out)
 	out[3] = nybble_chars[i % 16 % 16];
 }*/
 
-void uintToHexChars(unsigned int val, char* out)
+void uintToHexChars(unsigned int val, char* out, size_t len)
 {
+	ClearString(out, len);
 	size_t p = 0;
 	//out[p++] = '0';
 	//out[p++] = 'x';
@@ -696,8 +696,9 @@ void uintToHexChars(unsigned int val, char* out)
 	//out[p] = 0x0;
 }
 
-void uintToDecChars(unsigned int val, char* out)
+void uintToDecChars(unsigned int val, char* out, size_t len)
 {
+	ClearString(out, len);
 	size_t p = 0;
 	size_t digits = 1;
 	for (unsigned int length = val; length >= 10; length /= 10) digits++;
@@ -710,8 +711,9 @@ void uintToDecChars(unsigned int val, char* out)
 	p += digits;
 }
 
-void intToDecChars(int val, char* out)
+void intToDecChars(int val, char* out, size_t len)
 {
+	ClearString(out, len);
 	size_t p = 0;
 	if (val < 0) //If negative, prefix it.
 	{

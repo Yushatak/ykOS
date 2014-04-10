@@ -28,23 +28,23 @@ void cmd_Peek(char* args, size_t argsize)
 	Output(args);
 	Output(":");
 	char Chars[32] = {0};
-	uintToHexChars(*(uint32_t *)charsToInt(args), Chars);
+	uintToHexChars(*(uint32_t *)charsToInt(args), Chars, 32);
 	Output(Chars);
 }
 
 void cmd_Creg(void)
 {
 	char Chars[32] = {0};
-	uintToHexChars(get_cr0(), Chars);
+	uintToHexChars(get_cr0(), Chars, 32);
 	Output("CR0: ");
 	Output(Chars);
-	uintToHexChars(get_cr2(), Chars);
+	uintToHexChars(get_cr2(), Chars, 32);
 	Output("\nCR2: ");
 	Output(Chars);
-	uintToHexChars(get_cr3(), Chars);
+	uintToHexChars(get_cr3(), Chars, 32);
 	Output("\nCR3: ");
 	Output(Chars);
-	uintToHexChars(get_cr4(), Chars);
+	uintToHexChars(get_cr4(), Chars, 32);
 	Output("\nCR4: ");
 	Output(Chars);
 }
@@ -57,9 +57,8 @@ void cmd_Page(char* args)
 	//int table_index = address/4096;
 	//int page_index = address/1024%4;
 	
-	uintToHexChars((get_cr3() & 0xFFFFF000), Chars);
+	uintToHexChars((get_cr3() & 0xFFFFF000), Chars, 32);
 	Output(Chars);
-	ClearString(Chars, 32);
 	/*if (table_index > 0x400 || page_index > 0x400)
 	{
 		Output("] Address out of range of identity mapping.");
@@ -67,18 +66,16 @@ void cmd_Page(char* args)
 	}*/
 	int entry = Get_PTE(address);
 	Output("\nTable Index: 0x");
-	uintToHexChars(table_index(address), Chars); //Which Table
+	uintToHexChars(table_index(address), Chars, 32); //Which Table
 	Output(Chars);
 	Output("\nPage Index: 0x");
-	ClearString(Chars, 32);
-	uintToHexChars(page_index(address), Chars); //Which Page
+	uintToHexChars(page_index(address), Chars, 32); //Which Page
 	Output(Chars);
 	if (entry == 0) Output("Not Mapped");
 	else
 	{
 		Output("\nMapped To: 0x");
-		ClearString(Chars, 32);
-		uintToHexChars(entry & 0xFFFFF000, Chars);
+		uintToHexChars(entry & 0xFFFFF000, Chars, 32);
 		Output(Chars);
 	}
 }

@@ -131,7 +131,6 @@ void next_thread()
 			{
 				__asm__ volatile ("mov cr3, %0" :: "b"(current_thread->page_table));
 			}
-			*((uint32_t*)(old_thread->stack_pointer)) = (uint32_t)__builtin_return_address(0);
 			ctxt_sw((void**)&old_thread->stack_pointer, (void*)current_thread->stack_pointer);
 		}
 	}

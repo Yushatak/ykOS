@@ -9,5 +9,4 @@ mov [eax], esp
 mov eax, [esp+40d]
 mov esp, eax
 popad
-sti
 ret
