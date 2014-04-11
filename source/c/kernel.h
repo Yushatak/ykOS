@@ -11,6 +11,7 @@ for kernel functions.
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdarg.h>
 
 typedef struct idt_entry_struct
 {
@@ -209,6 +210,7 @@ void untracked_cli();
 void untracked_sti();
 uint8_t cmos_read(uint8_t reg);
 void OutputLine(int line, const char *source, ...);
+void base_Output(const char *source, va_list args);
 
 //Handlers
 void KeyboardHandler(isr_registers_t* regs);

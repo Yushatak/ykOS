@@ -18,6 +18,7 @@ Kernel Memory Map
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdarg.h>
 #include "kernel.h"
 #include "multiboot.h"
 #include "paging.h"
@@ -178,8 +179,6 @@ int main(multiboot_info_t* boot_mbi)
 	afternoon = hour > 12;
 	hour = ((hour + 11) % 12) + 1;
 	
-	//Initialize Screen Elements
-	OutputAt(status, 0, statusLine);
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);
 	
@@ -329,10 +328,6 @@ void CommandParser()
 		Output("\nTicks: %d", ticks);
 		Output("\nTocks: %d", tocks);
 	}
-	else if (StringCompare(cmdbuffer,"test"))
-	{
-		Output("\n%d", 0x100000000L);
-	}
 	else 
 	{
 		Output("Invalid Command.");
@@ -453,8 +448,7 @@ void TimerHandler(isr_registers_t* regs)
 				};
 			}
 		}
-		OutputLine(statusLine, "\n%u/%u/%u - %u:%u:%u", month, day, year, hour, minute, second);
-		Output(afternoon ? "PM" : "AM");
+		OutputLine(statusLine, "%u/%u/%u - %u:%u:%u %s", month, day, year, hour, minute, second, afternoon ? "PM" : "AM");
 	}
 	if (ticks % 10 == 0) next_thread();
 }
@@ -520,7 +514,7 @@ void memCopyRange(char *source, char *dest, int length)
 	int limit = *dest + length;
 	while (*dest + 1 < limit)
 	{
-		*dest++ = *source++
+		*dest++ = *source++;
 	}
 }
 
@@ -569,24 +563,33 @@ void Scroll()
 	CursorX = 0; //Line Feed
 }
 
+void Output(const char* source, ...)
+{
+	va_list args;
+	va_start(args, source);
+	base_Output(source, args);
+	va_end(args);
+}
+
 void OutputLine(int line, const char *source, ...)
 {
+	va_list args;
+	va_start(args, source);
 	ClearLine(line);
 	int old_x = CursorX;
 	int old_y = CursorY;
 	CursorX = 0;
 	CursorY = line;
 	scroll = false;
-	Output(source);
+	base_Output(source, args);
 	scroll = true;
 	CursorX = old_x;
 	CursorY = old_y;
+	va_end(args);
 }
 
-void Output(const char *source, ...)
+void base_Output(const char *source, va_list args)
 {
-	char** arg = (char**)&source;
-	arg++;
 	char c;
 	char buffer[32] = {0};
 	while ((c = *source++) != 0)
@@ -599,25 +602,27 @@ void Output(const char *source, ...)
 			switch (c)
 			{
 				case 'd':
-					intToDecChars(*((int*)arg++), buffer, 32);
+					intToDecChars(va_arg(args, int), buffer, 32);
 					ptr=buffer;
 					goto string;
 					break;
 				case 'u':
-					uintToDecChars(*((unsigned int*)arg++), buffer, 32);
+					uintToDecChars(va_arg(args, unsigned int), buffer, 32);
 					ptr = buffer;
 					goto string;
 					break;
 				case 'h':
 				case 'x':
-					uintToHexChars(*((int*)arg++), buffer, 32);
+					uintToHexChars(va_arg(args, unsigned int), buffer, 32);
 					ptr=buffer;
 					goto string;
 					break;
 				case 's':
-					ptr=*arg++;
+					ptr=va_arg(args, char*);
 					if (!ptr)
 						ptr = "NULL";
+					goto string;
+					break;
 				case '%':
 					OutputChar('%');
 					break;
