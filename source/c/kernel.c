@@ -496,19 +496,19 @@ void ClearString(char* string, size_t length)
 
 bool StringCompare(char* buffer1, char* buffer2)
 {
-	if (!(*buffer1) || !(*buffer2)) return false;
-	while (*buffer1 || *buffer2)
+	while (*buffer1 == *buffer2)
 	{
-		if (!(*buffer1) && *buffer2) return false;
-		if (!(*buffer2) && *buffer1) return false;
-		if (*buffer1++ != *buffer2++) return false;
+		//If both hit a terminator at the same time, return true.
+		if (*buffer1 == 0) return true;
+		buffer1++;
+		buffer2++;
 	}
-	return true;
+	return false;
 }
 
 bool StartsWith(char* string, char* substring)
 {
-	while (*substring)
+	while (*substring && *string)
 	{
 		if (*string++ != *substring++) return false;
 	}
