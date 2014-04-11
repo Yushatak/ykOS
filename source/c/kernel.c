@@ -38,6 +38,7 @@ Kernel Memory Map
 //String Declarations
 char message[] = "32-Bit Kernel Loaded";
 char prompt[] = "ykOS>";
+char status[79] = {0};
 
 //Buffers
 char keybuffer[256] = {0};
@@ -66,9 +67,19 @@ isr_t intHandlers[256];
 bool shift = false;
 bool ctrl = false;
 bool alt = false;
+bool scroll = true;
 static volatile bool wait = false;
+int statusLine = 0;
 int promptLine = 24;
 multiboot_info_t* mbi;
+//RTC
+uint8_t second = 0;
+uint8_t minute = 0;
+uint8_t hour = 0;
+uint8_t day = 0;
+uint8_t month = 0;
+uint8_t year = 0;
+bool afternoon = false;
 
 //Externs
 extern void* kernel_end;
@@ -147,11 +158,41 @@ int main(multiboot_info_t* boot_mbi)
 		panic();
 	}
 	
+	OutputAt(status, 0, statusLine);
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);
 	
+	
 	//Initialize threading rings.
 	initialize_rings();
+	//Initialize Time
+	uint8_t rb = cmos_read(0x0B);
+	second = cmos_read(0x0);
+	minute = cmos_read(0x2);
+	hour = cmos_read(0x4);
+	day = cmos_read(0x7);
+	month = cmos_read(0x8);
+	year = cmos_read(0x9);
+	if (!(rb & 0x04)) //BCD->Binary If Relevant
+	{
+		second = (second & 0x0F) + ((second/16)*10);
+		minute = (minute & 0x0F) + ((minute/16)*10);
+		hour = ((hour & 0x0F) + (((hour & 0x70)/16)*10)) | (hour & 0x80);
+		day = (day & 0x0F) + ((day/16)*10);
+		month = (month & 0x0F) + ((month/16)*10);
+		year = (year & 0x0F) + ((year/16)*10);
+	}
+	if (hour == 0) 
+	{
+		hour = 12;
+		afternoon = false;
+	}
+	else if (hour > 12) 
+	{
+		hour-=12;
+		afternoon = true;
+	}
+	else afternoon = false;
 	//Begin infinite loop.
 	kernel_loop();
 	return 1; //should never get here - EVER!
@@ -405,7 +446,27 @@ void TimerHandler(isr_registers_t* regs)
 {
 	ticks++;
 	current_thread->ticks++;
-	if (ticks % 1000 == 0) tocks++;
+	if (ticks % 1000 == 0)
+	{
+		if (++second >= 60)
+		{
+			second = 0;
+			if (++minute >= 60)
+			{
+				minute = 0;
+				if (++hour > 12)
+				{
+					hour = 1;
+					if (afternoon) afternoon = false;
+					else afternoon = true;
+				};
+			}
+		}
+		Output("\n%u/%u/%u - %u:%u:%u", month, day, year, hour, minute, second);
+		if (afternoon) Output("PM");
+		else Output("AM");
+		//Update time.
+	}
 	if (ticks % 10 == 0) next_thread();
 }
 
@@ -511,7 +572,7 @@ void OutputLengthToPort(char *source, int port, int length)
 
 void Scroll()
 {
-	for (int y = 1; y <= promptLine; y++)
+	for (int y = statusLine + 2; y <= promptLine; y++)
 	{
 		for (int x = 0; x <  ScreenColumns; x++)
 		{
@@ -519,6 +580,20 @@ void Scroll()
 		}
 	}
 	CursorX = 0; //Line Feed
+}
+
+void OutputLine(int line, const char *source, ...)
+{
+	ClearLine(line);
+	int old_x = CursorX;
+	int old_y = CursorY;
+	CursorX = 0;
+	CursorY = line;
+	scroll = false;
+	Output(source);
+	scroll = true;
+	CursorX = old_x;
+	CursorY = old_y;
 }
 
 void Output(const char *source, ...)
@@ -529,7 +604,7 @@ void Output(const char *source, ...)
 	char buffer[32] = {0};
 	while ((c = *source++) != 0)
 	{
-		if (CursorX == ScreenColumns - 1) Scroll();
+		if (CursorX == ScreenColumns - 1 && scroll) Scroll();
 		if (c == '%')
 		{
 			char* ptr;
@@ -539,6 +614,11 @@ void Output(const char *source, ...)
 				case 'd':
 					intToDecChars(*((int*)arg++), buffer, 32);
 					ptr=buffer;
+					goto string;
+					break;
+				case 'u':
+					uintToDecChars(*((unsigned int*)arg++), buffer, 32);
+					ptr = buffer;
 					goto string;
 					break;
 				case 'h':
@@ -941,4 +1021,10 @@ void sti()
 inline void untracked_sti()
 {
 	__asm__ volatile("sti");
+}
+
+uint8_t cmos_read(uint8_t reg)
+{
+	outb(0x70, reg);
+	return inb(0x71);
 }

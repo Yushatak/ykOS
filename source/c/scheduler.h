@@ -21,7 +21,7 @@ typedef struct thread
 	uint32_t page_table;
 	bool sleeping;
 	unsigned long ticks;
-	int ring;
+	int8_t ring;
 	void* previous_thread;
 	void* next_thread;
 	bool interrupt_state;

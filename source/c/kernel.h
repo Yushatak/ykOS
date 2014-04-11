@@ -207,6 +207,8 @@ void cli();
 void sti();
 void untracked_cli();
 void untracked_sti();
+uint8_t cmos_read(uint8_t reg);
+void OutputLine(int line, const char *source, ...);
 
 //Handlers
 void KeyboardHandler(isr_registers_t* regs);
