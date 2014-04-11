@@ -512,8 +512,16 @@ bool StartsWith(char* string, char* substring)
 void memCopyRange(char *source, char *dest, int length)
 {
 	int limit = *dest + length;
-	while (*dest + 1 < limit)
+	/*while (*dest + 1 < limit)
 	{
+		*dest++ = *source++;
+	}*/
+	while (*source)
+	{
+		if (*dest + 1 >= limit)
+		{
+			return;
+		}
 		*dest++ = *source++;
 	}
 }
@@ -620,7 +628,14 @@ void base_Output(const char *source, va_list args)
 				case 's':
 					ptr=va_arg(args, char*);
 					if (!ptr)
-						ptr = "NULL";
+					{
+						buffer[0] = 'N';
+						buffer[1] = 'U';
+						buffer[2] = 'L';
+						buffer[3] = 'L';
+						buffer[4] = 0;
+						ptr = buffer;
+					}
 					goto string;
 					break;
 				case '%':
