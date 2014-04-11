@@ -156,15 +156,8 @@ int main(multiboot_info_t* boot_mbi)
 	{
 		Output("\nInvalid Flags (0x%x)!", mbi->flags);
 		panic();
-	}
+	}	
 	
-	OutputAt(status, 0, statusLine);
-	OutputAt(prompt, 0, promptLine);
-	SetCursor(sizeof(prompt) - 1, promptLine);
-	
-	
-	//Initialize threading rings.
-	initialize_rings();
 	//Initialize Time
 	uint8_t rb = cmos_read(0x0B);
 	second = cmos_read(0x0);
@@ -182,17 +175,16 @@ int main(multiboot_info_t* boot_mbi)
 		month = (month & 0x0F) + ((month/16)*10);
 		year = (year & 0x0F) + ((year/16)*10);
 	}
-	if (hour == 0) 
-	{
-		hour = 12;
-		afternoon = false;
-	}
-	else if (hour > 12) 
-	{
-		hour-=12;
-		afternoon = true;
-	}
-	else afternoon = false;
+	afternoon = hour > 12;
+	hour = ((hour + 11) % 12) + 1;
+	
+	//Initialize Screen Elements
+	OutputAt(status, 0, statusLine);
+	OutputAt(prompt, 0, promptLine);
+	SetCursor(sizeof(prompt) - 1, promptLine);
+	
+	//Initialize threading rings.
+	initialize_rings();
 	//Begin infinite loop.
 	kernel_loop();
 	return 1; //should never get here - EVER!
@@ -457,15 +449,12 @@ void TimerHandler(isr_registers_t* regs)
 				if (++hour > 12)
 				{
 					hour = 1;
-					if (afternoon) afternoon = false;
-					else afternoon = true;
+					afternoon = !afternoon;
 				};
 			}
 		}
-		Output("\n%u/%u/%u - %u:%u:%u", month, day, year, hour, minute, second);
-		if (afternoon) Output("PM");
-		else Output("AM");
-		//Update time.
+		OutputLine(statusLine, "\n%u/%u/%u - %u:%u:%u", month, day, year, hour, minute, second);
+		Output(afternoon ? "PM" : "AM");
 	}
 	if (ticks % 10 == 0) next_thread();
 }
@@ -507,9 +496,11 @@ void ClearString(char* string, size_t length)
 
 bool StringCompare(char* buffer1, char* buffer2)
 {
-	while (*buffer2)
+	if (!(*buffer1) || !(*buffer2)) return false;
+	while (*buffer1 || *buffer2)
 	{
-		if (!(*buffer1)) return false;
+		if (!(*buffer1) && *buffer2) return false;
+		if (!(*buffer2) && *buffer1) return false;
 		if (*buffer1++ != *buffer2++) return false;
 	}
 	return true;
@@ -527,13 +518,9 @@ bool StartsWith(char* string, char* substring)
 void memCopyRange(char *source, char *dest, int length)
 {
 	int limit = *dest + length;
-	while (*source)
+	while (*dest + 1 < limit)
 	{
-		if (*dest + 1 >= limit)
-		{
-			return;
-		}
-		*dest++ = *source++;
+		*dest++ = *source++
 	}
 }
 
