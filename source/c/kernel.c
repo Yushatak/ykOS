@@ -13,16 +13,17 @@ Kernel Memory Map
 
 0x00000000-0x00100000 - First 1MB (owned by kernel)
 0x00100000-0x00400000 - Kernel (including 16K kernel stack, IDT, GDT, and extra space for growth)
-0x00400000-0x00450000 - Kernel Thread Table
 */
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdarg.h>
 #include "kernel.h"
+#include "inline.h"
+#include "screen.h"
+#include "keyboard.h"
 #include "multiboot.h"
 #include "paging.h"
-#include "idt.h"
 #include "kthread.h"
 #include "pmm.h"
 #include "memory.h"
@@ -37,41 +38,19 @@ Kernel Memory Map
 #define COMBINE_32_64(high, low) ((uint64_t)high << 32 | (uint64_t)low)
 
 //String Declarations
-char message[] = "32-Bit Kernel Loaded";
-char prompt[] = "ykOS>";
 char status[79] = {0};
-
-//Buffers
-char keybuffer[256] = {0};
-int keybuffer_ptr = 0;
-char cmdbuffer[256] = {0};
 
 //Pointers
 uint8_t* memory = (uint8_t*)0x0;
-uint16_t* vga_memory = (uint16_t*)0xB8000;
 
 //Other Variable Declarations
-int CursorX = 0;
-int CursorY = 23;
-int ScreenColumns = 80;
-int ScreenRows = 25;
+char prompt[] = "ykOS>";
 int mem_total = 0;
 int mem_low = 0;
 int mem_high = 0;
 unsigned long ticks = 0;
 unsigned long tocks = 0;
-const int VGABaseAddress = 0xB8000;
-const int VGALimit = 0xBFFFF;
-int BytesPerChar = 2;
-const int VGAControlBase = 0x3D4;
-isr_t intHandlers[256];
-bool shift = false;
-bool ctrl = false;
-bool alt = false;
-bool scroll = true;
 static volatile bool wait = false;
-int statusLine = 0;
-int promptLine = 24;
 multiboot_info_t* mbi;
 //RTC
 uint8_t second = 0;
@@ -179,8 +158,12 @@ int main(multiboot_info_t* boot_mbi)
 	afternoon = hour > 12;
 	hour = ((hour + 11) % 12) + 1;
 	
+	initialize_keyboard();
+	initialize_screen();
+	
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(sizeof(prompt) - 1, promptLine);
+	OutputLine(statusLine, "%u/%u/%u - %u:%u:%u %s", month, day, year, hour, minute, second, afternoon ? "PM" : "AM");
 	
 	//Initialize threading rings.
 	initialize_rings();
@@ -193,153 +176,6 @@ void kernel_loop()
 {
 	for (;;);
 }
-
-int GetMemoryCount()
-{
-	return mem_total;
-}
-
-void Interrupt(isr_registers_t* regs)
-{	
-	if (regs->intvec >= 0x28) outb(0xA0, 0x20); //Reset Slave PIC
-	outb(0x20, 0x20); //Reset Master PIC
-	
-	if (intHandlers[regs->intvec] != 0)
-	{
-		((isr_t)intHandlers[regs->intvec])(regs);
-	}
-	else if (regs->intvec < 0x20 || regs->intvec > 0x30)
-	{
-		Output("\nUnhandled Interrupt %d (0x%x)!", regs->intvec, regs->intvec);
-		Output("\nFault At EIP: 0x%x", regs->eip);
-		panic();
-		BOCHS_BP();
-		__asm__ volatile("hlt");
-	}
-}
-
-void rst_int_flg()
-{
-	if (current_thread->interrupt_state) sti();
-	else cli();
-}
-
-void panic()
-{
-	Output("\nKernel Panic!\n");
-	__asm__ volatile ("int 0x30");
-}
-
-void ClearLine(int y)
-{
-	for (int x = 0; x <  80; x++)
-	{
-		vga_memory[ScreenColumns * y + x] = 0x0720;
-	}
-}
-
-void WaitKey()
-{
-	Output("Press a key...");
-	wait = true; //Set wait status.
-	__asm__ volatile("sti");
-	while (wait)
-	{
-		continue;
-	}
-	__asm__ volatile("cli");
-}
-
-void CommandParser()
-{
-	char* address = cmdbuffer;
-	char* splitPos = 0;
-	while (*address)
-	{
-		//Set splitPos to the address after the first space found in the command string, to denote the split where args begin.
-		if (*address++ == ' ') 
-		{
-			splitPos = address;
-			//If there's a space at the end of the string, this doesn't count as args.
-			if (*address + 1 == 0) splitPos = 0;
-			break;
-		}
-	}
-	if (StartsWith(cmdbuffer, "peek "))
-	{
-		if (splitPos == 0) Output("Invalid Argument(s).\n");
-		else cmd_Peek(splitPos, (keybuffer_size - (int)splitPos) + keybuffer_ptr);
-	}
-	else if (StartsWith(cmdbuffer, "convert "))
-	{
-		if (splitPos == 0) Output("Invalid Argument(s).\n");
-		else cmd_Convert(splitPos);
-	}
-	else if (StartsWith(cmdbuffer, "page "))
-	{
-		if (splitPos == 0) Output("Invalid Argument(s).\n");
-		else cmd_Page(splitPos);
-	}
-	else if (StringCompare(cmdbuffer, "clear") || StringCompare(cmdbuffer, "cls"))
-	{
-		ClearScreen();
-		OutputAt(prompt, 0, promptLine);
-		SetCursor(sizeof(prompt) - 1, promptLine);
-		CursorX = 0;
-	}
-	else if (StringCompare(cmdbuffer, "creg"))
-	{
-		cmd_Creg();
-	}
-	else if (StringCompare(cmdbuffer, "wait"))
-	{
-		WaitKey();
-		Output("\nComplete.");
-	}
-	else if (StringCompare(cmdbuffer, "mem"))
-	{
-		Output("---------------\nPhysical Memory\n---------------");
-		Output("\nLow: %dKB", mem_low);
-		Output("\nHigh: %dKB", mem_high);
-		Output("\nTotal: %dKB", mem_total);
-		Output("\nAvailable: %dKB (%d%%, %d pages)", free_pages * 4,  (uint32_t)(free_pages*4*100.0/mem_total), free_pages);
-		uint32_t stack_used = ((uint32_t)&stack_start-get_esp());
-		uint32_t stack_total = ((uint32_t)&stack_start-(uint32_t)&stack_end);
-		uint32_t stack_free = stack_total-stack_used;
-		Output("\n------------\nKernel Stack\n------------");
-		Output("\nTotal: %dB", stack_total);
-		Output("\nFree: %dB (%d%%)", stack_free, (uint32_t)(stack_free*100.0/stack_total));
-	}
-	else if (StringCompare(cmdbuffer, "proc") || StringCompare(cmdbuffer, "tasklist"))
-	{
-		Output("---------------\nCurrent Thread\n---------------");
-		Output("\nTicks: %d", current_thread->ticks);
-		Output("\n------------\nThread Rings\n------------");
-		Output("\nRing 0: %d Thread(s)", ring[0]->thread_count);
-		Output("\nRing 1: %d Thread(s)", ring[1]->thread_count);
-		Output("\nRing 2: %d Thread(s)", ring[2]->thread_count);
-	}
-	else if (StringCompare(cmdbuffer, "dump"))
-	{
-		panic();
-	}
-	else if (StringCompare(cmdbuffer, "ticks"))
-	{
-		Output("\nTicks: %d", ticks);
-		Output("\nTocks: %d", tocks);
-	}
-	else 
-	{
-		Output("Invalid Command.");
-	}
-	memFill(cmdbuffer, sizeof(cmdbuffer), 0);
-}
-
-void TestFunction()
-{
-	for (;;);//Output("\nTicks: %d", ticks); };
-}
-
 void KeyboardHandler(isr_registers_t* regs)
 {
 	//Need to design a system to handle interrupt handler feedback in the kernel
@@ -480,6 +316,120 @@ void DumpRegisters(isr_registers_t* regs)
 	Output("\nEFLAGS: 0x%x", regs->eflags);
 }
 
+int GetMemoryCount()
+{
+	return mem_total;
+}
+
+void panic()
+{
+	Output("\nKernel Panic!\n");
+	__asm__ volatile ("int 0x30");
+}
+
+
+void WaitKey()
+{
+	Output("Press a key...");
+	wait = true; //Set wait status.
+	__asm__ volatile("sti");
+	while (wait)
+	{
+		continue;
+	}
+	__asm__ volatile("cli");
+}
+
+void CommandParser()
+{
+	char* address = cmdbuffer;
+	char* splitPos = 0;
+	while (*address)
+	{
+		//Set splitPos to the address after the first space found in the command string, to denote the split where args begin.
+		if (*address++ == ' ') 
+		{
+			splitPos = address;
+			//If there's a space at the end of the string, this doesn't count as args.
+			if (*address + 1 == 0) splitPos = 0;
+			break;
+		}
+	}
+	if (StartsWith(cmdbuffer, "peek "))
+	{
+		if (splitPos == 0) Output("Invalid Argument(s).\n");
+		else cmd_Peek(splitPos, (keybuffer_size - (int)splitPos) + keybuffer_ptr);
+	}
+	else if (StartsWith(cmdbuffer, "convert "))
+	{
+		if (splitPos == 0) Output("Invalid Argument(s).\n");
+		else cmd_Convert(splitPos);
+	}
+	else if (StartsWith(cmdbuffer, "page "))
+	{
+		if (splitPos == 0) Output("Invalid Argument(s).\n");
+		else cmd_Page(splitPos);
+	}
+	else if (StringCompare(cmdbuffer, "clear") || StringCompare(cmdbuffer, "cls"))
+	{
+		ClearScreen();
+		OutputAt(prompt, 0, promptLine);
+		SetCursor(sizeof(prompt) - 1, promptLine);
+		CursorX = 0;
+	}
+	else if (StringCompare(cmdbuffer, "creg"))
+	{
+		cmd_Creg();
+	}
+	else if (StringCompare(cmdbuffer, "wait"))
+	{
+		WaitKey();
+		Output("\nComplete.");
+	}
+	else if (StringCompare(cmdbuffer, "mem"))
+	{
+		Output("---------------\nPhysical Memory\n---------------");
+		Output("\nLow: %dKB", mem_low);
+		Output("\nHigh: %dKB", mem_high);
+		Output("\nTotal: %dKB", mem_total);
+		Output("\nAvailable: %dKB (%d%%, %d pages)", free_pages * 4,  (uint32_t)(free_pages*4*100.0/mem_total), free_pages);
+		uint32_t stack_used = ((uint32_t)&stack_start-get_esp());
+		uint32_t stack_total = ((uint32_t)&stack_start-(uint32_t)&stack_end);
+		uint32_t stack_free = stack_total-stack_used;
+		Output("\n------------\nKernel Stack\n------------");
+		Output("\nTotal: %dB", stack_total);
+		Output("\nFree: %dB (%d%%)", stack_free, (uint32_t)(stack_free*100.0/stack_total));
+	}
+	else if (StringCompare(cmdbuffer, "proc") || StringCompare(cmdbuffer, "tasklist"))
+	{
+		Output("---------------\nCurrent Thread\n---------------");
+		Output("\nTicks: %d", current_thread->ticks);
+		Output("\n------------\nThread Rings\n------------");
+		Output("\nRing 0: %d Thread(s)", ring[0]->thread_count);
+		Output("\nRing 1: %d Thread(s)", ring[1]->thread_count);
+		Output("\nRing 2: %d Thread(s)", ring[2]->thread_count);
+	}
+	else if (StringCompare(cmdbuffer, "dump"))
+	{
+		panic();
+	}
+	else if (StringCompare(cmdbuffer, "ticks"))
+	{
+		Output("\nTicks: %d", ticks);
+		Output("\nTocks: %d", tocks);
+	}
+	else 
+	{
+		Output("Invalid Command.");
+	}
+	memFill(cmdbuffer, sizeof(cmdbuffer), 0);
+}
+
+void TestFunction()
+{
+	for (;;);//Output("\nTicks: %d", ticks); };
+}
+
 void ClearString(char* string, size_t length)
 {
 	for (int i = 0; i < length; i++)
@@ -533,190 +483,6 @@ void memFillLength(unsigned char *dest, int length, unsigned char val)
 	{
 		*dest++ = val;
 	}
-}
-
-void OutputToPort(char *source, int port)
-{
-	while (*source)
-	{
-		outb(port, *source);
-		source++;
-	}
-}
-
-void OutputLengthToPort(char *source, int port, int length)
-{
-	int i = 0;
-	while (*source)
-	{
-		if (i < length)
-		{
-			outb(port, *source);
-			source++;
-			i++;
-		}
-		else return;
-	}
-}
-
-void Scroll()
-{
-	for (int y = statusLine + 2; y <= promptLine; y++)
-	{
-		for (int x = 0; x <  ScreenColumns; x++)
-		{
-			vga_memory[ScreenColumns * (y - 1) + x] = vga_memory[ScreenColumns * y + x];
-		}
-	}
-	CursorX = 0; //Line Feed
-}
-
-void Output(const char* source, ...)
-{
-	va_list args;
-	va_start(args, source);
-	base_Output(source, args);
-	va_end(args);
-}
-
-void OutputLine(int line, const char *source, ...)
-{
-	va_list args;
-	va_start(args, source);
-	ClearLine(line);
-	int old_x = CursorX;
-	int old_y = CursorY;
-	CursorX = 0;
-	CursorY = line;
-	scroll = false;
-	base_Output(source, args);
-	scroll = true;
-	CursorX = old_x;
-	CursorY = old_y;
-	va_end(args);
-}
-
-void base_Output(const char *source, va_list args)
-{
-	char c;
-	char buffer[32] = {0};
-	while ((c = *source++) != 0)
-	{
-		if (CursorX == ScreenColumns - 1 && scroll) Scroll();
-		if (c == '%')
-		{
-			char* ptr;
-			c = *source++;
-			switch (c)
-			{
-				case 'd':
-					intToDecChars(va_arg(args, int), buffer, 32);
-					ptr=buffer;
-					goto string;
-					break;
-				case 'u':
-					uintToDecChars(va_arg(args, unsigned int), buffer, 32);
-					ptr = buffer;
-					goto string;
-					break;
-				case 'h':
-				case 'x':
-					uintToHexChars(va_arg(args, unsigned int), buffer, 32);
-					ptr=buffer;
-					goto string;
-					break;
-				case 's':
-					ptr=va_arg(args, char*);
-					if (!ptr)
-					{
-						buffer[0] = 'N';
-						buffer[1] = 'U';
-						buffer[2] = 'L';
-						buffer[3] = 'L';
-						buffer[4] = 0;
-						ptr = buffer;
-					}
-					goto string;
-					break;
-				case '%':
-					OutputChar('%');
-					break;
-				string:
-					while(*ptr)
-						OutputChar(*ptr++);
-					break;
-				default:
-					//OutputChar(*((int*)arg++));
-					break;
-			}
-		}
-		else OutputChar(c);
-	}
-}
-
-void OutputChar(char c)
-{
-	if (c == '\n')
-	{
-		Scroll();
-		return;
-	}
-	char *destination = (char *)GetVideoAddress(CursorX++, CursorY);
-	*destination = c;
-	*++destination = 0x07;
-}
-
-//Outputs the string at the address pointed to by *source to the screen coordinates specified, advancing the text cursor when done.
-void OutputAt(char *source, int x, int y) 
-{
-	char *destination = (char *)GetVideoAddress(x, y);
-	int i = 0;
-	while (*source) 
-	{
-		i++;
-		if (*destination + BytesPerChar >= VGALimit) return;
-		*destination++ = *source++;
-		*destination++ = 7; 
-	}
-}
-
-void OutputCharAt(char c, int x, int y) 
-{
-	*(char *)GetVideoAddress(x, y) = c;
-}
-
-void OutputHexByteAt(uint8_t byte, int x, int y)
-{
-	char Chars[3];
-	uintToHexChars(byte, Chars, 3);
-	Chars[2] = 0x0; //terminator
-	OutputAt(Chars, x, y);
-}
-
-void OutputHexByte(uint8_t byte)
-{
-	char Chars[3];
-	uintToHexChars(byte, Chars, 3);
-	Chars[2] = 0x0; //terminator
-	Output(Chars);
-}
-
-void ClearScreen()
-{
-	for (int y = 0; y < 25; y++)
-	{
-		for (int x = 0; x < 80; x++)
-		{
-			vga_memory[ScreenColumns * y + x] = 0x0720;
-		}
-	}
-	//memFillW((void*)VGABaseAddress, VGALimit - VGABaseAddress, 0x20 | (((0 << 4) | (15 & 0x0F)) << 8));	
-}
-
-//Based on variables (defaults for 80x25 VGA text mode) calculates the video memory offset that equates to an X,Y coordinate in chars.
-void* GetVideoAddress(int x, int y)
-{
-	return (void*)((ScreenColumns * y + x) * BytesPerChar + VGABaseAddress);
 }
 
 char NibbleToChar(int nibble)
@@ -818,71 +584,12 @@ void intToDecChars(int val, char* out, size_t len)
 	p += digits;
 }
 
-uint32_t charsToInt(char* in)
-{
-	uint32_t total = 0;
-	while (*in)
-	{
-		total = (total * 16) + char_nybbles[*(uint8_t * )in++];
-	}
-	return total;
-}
-
-void memPut(void* address, uint8_t value)
-{
-	*(uint8_t *)address = value;
-}
-
-void memPutW(void* address, uint16_t value)
-{
-	*(uint16_t *)address = value;
-}
-
-void memPutInt(void* address, int value)
-{
-	*(int *)address = value;
-}
-
-uint8_t memGet(void* address)
-{
-	return *(uint8_t *)address;
-}
-
-uint16_t memGetW(void* address)
-{
-	return *(uint16_t *)address;
-}
-
-int memGetInt(void* address)
-{
-	return *(int *)address;
-}
-
-void memCopy(void* srcAddress, void* destAddress)
-{
-	memPut(destAddress, memGet(srcAddress));
-}
-
-void memCopyInt(void* srcAddress, void* destAddress)
-{
-	memPutInt(destAddress, memGetInt(srcAddress));
-}
-
-void SetCursor(int x, int y)
-{
-	unsigned short pos = (y * ScreenColumns) + x;
-	outb(VGAControlBase, 0x0F);
-	outb(VGAControlBase + 1, (unsigned char)(pos & 0xFF));
-	outb(VGAControlBase, 0x0E);
-	outb(VGAControlBase + 1, (unsigned char)((pos >> 8) & 0xFF));
-}
-
 void memFill(void* address, int length, uint8_t value)
 {
 	int limit = (int)address + length;
 	for (uint8_t* addr = address; (int)addr <= limit; addr++)
 	{
-		memPut(addr, value);
+		*addr = value;
 	}
 }
 
@@ -891,122 +598,15 @@ void memFillW(void* address, int length, uint16_t value)
 	int limit = (int)address + length;
 	for (uint16_t* addr = address; (int)addr <= limit; addr+=2)
 	{
-		memPutW(addr, value);
+		*addr = value;
 	}
 }
 
-void registerISR(uint8_t idx, isr_t isr)
+uint8_t cmos_read(uint8_t reg)
 {
-	intHandlers[idx] = isr;
+	outb(0x70, reg);
+	return inb(0x71);
 }
-
-inline void outb(uint16_t port, uint8_t val)
-{
-	__asm__ volatile ("outb %1, %0" : : "a"(val), "Nd"(port));
-}
-
-inline uint8_t inb(uint16_t port)
-{
-	uint8_t ret;
-	__asm__ volatile ("inb %0, %1" : "=a"(ret) : "Nd"(port));
-	return ret;
-}
-
-inline void halt()
-{
-	__asm__ volatile("hlt");
-}
-
-inline uint32_t get_eax()
-{
-	uint32_t ret = 0;
-	__asm__ volatile ("mov %0, eax" : "=b"(ret));
-	return ret;
-}
-
-inline uint32_t get_ebx()
-{
-	uint32_t ret = 0;
-	__asm__ volatile ("mov %0, ebx" : "=a"(ret));
-	return ret;
-}
-
-inline uint32_t get_ecx()
-{
-	uint32_t ret = 0;
-	__asm__ volatile ("mov %0, eax" : "=a"(ret));
-	return ret;
-}
-
-inline uint32_t get_edx()
-{
-	uint32_t ret = 0;
-	__asm__ volatile ("mov %0, edx" : "=a"(ret));
-	return ret;
-}
-
-inline uint32_t get_esp()
-{
-	uint32_t ret = 0;
-	__asm__ volatile ("mov %0, esp" : "=a"(ret));
-	return ret;
-}
-
-inline uint32_t get_ebp()
-{
-	uint32_t ret = 0;
-	__asm__ volatile ("mov %0, ebp" : "=a"(ret));
-	return ret;
-}
-
-inline uint32_t get_esi()
-{
-	uint32_t ret = 0;
-	__asm__ volatile ("mov %0, esi" : "=a"(ret));
-	return ret;
-}
-
-inline uint32_t get_edi()
-{
-	uint32_t ret = 0;
-	__asm__ volatile ("mov %0, edi" : "=a"(ret));
-	return ret;
-}
-
-inline uint32_t get_cr0()
-{
-	uint32_t ret = 0;
-	__asm__ volatile ("mov %0, cr0" : "=a"(ret));
-	return ret;
-}
-
-inline uint32_t get_cr2()
-{
-	uint32_t ret = 0;
-	__asm__ volatile ("mov %0, cr2" : "=a"(ret));
-	return ret;
-}
-	
-inline uint32_t get_cr3()
-{
-	uint32_t ret = 0;
-	__asm__ volatile ("mov %0, cr3" : "=a"(ret));
-	return ret;
-}
-	
-inline uint32_t get_cr4()
-{
-	uint32_t ret = 0;
-	__asm__ volatile ("mov %0, cr4" : "=a"(ret));
-	return ret;
-}
-	
-/*inline uint64_t get_cr8()
-{
-	uint64_t ret = 0;
-	__asm__ volatile ("mov %0, cr8" : "=a"(ret));
-	return ret;
-}*/
 
 void cli()
 {
@@ -1014,24 +614,8 @@ void cli()
 	__asm__ volatile("cli");
 }
 
-inline void untracked_cli()
-{
-	__asm__ volatile("cli");
-}
-
 void sti()
 {
 	current_thread->interrupt_state = true;
 	__asm__ volatile("sti");
-}
-
-inline void untracked_sti()
-{
-	__asm__ volatile("sti");
-}
-
-uint8_t cmos_read(uint8_t reg)
-{
-	outb(0x70, reg);
-	return inb(0x71);
 }

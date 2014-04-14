@@ -11,6 +11,9 @@ This contains the code for individual built-in command applets in the kernel she
 #include <stdbool.h>
 #include <stdarg.h>
 #include "kernel.h"
+#include "keyboard.h"
+#include "screen.h"
+#include "inline.h"
 #include "paging.h"
 #include "commands.h"
 #include "memory.h"

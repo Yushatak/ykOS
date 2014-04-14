@@ -14,6 +14,9 @@ INPUT(obj/pmm.o)
 INPUT(obj/memory.o)
 INPUT(obj/kthread.o)
 INPUT(obj/scheduler.o)
+INPUT(obj/keyboard.o)
+INPUT(obj/screen.o)
+INPUT(obj/inline.o)
 SECTIONS
 {
 	. = 0x100000;

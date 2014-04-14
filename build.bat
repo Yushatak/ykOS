@@ -32,6 +32,9 @@ i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -st
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -c source/c/memory.c -o obj/memory.o -g
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -c source/c/kthread.c -o obj/kthread.o -g
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -c source/c/scheduler.c -o obj/scheduler.o -g
+i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -c source/c/keyboard.c -o obj/keyboard.o -g
+i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -c source/c/screen.c -o obj/screen.o -g
+i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -c source/c/inline.c -o obj/inline.o -g
 echo =Linking Kernel...
 i486-elf-ld --relax -static -n -T build/kernel.ld --oformat=elf32-i386
 echo =Finalizing Kernel...

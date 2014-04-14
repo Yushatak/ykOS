@@ -11,6 +11,8 @@ Functions for managing thread creation, manipulation, and scheduling.
 #include <stdint.h>
 #include <stddef.h>
 #include "kernel.h"
+#include "inline.h"
+#include "screen.h"
 #include "memory.h"
 #include "pmm.h"
 #include "kthread.h"

@@ -9,8 +9,9 @@ This contains code to generate the entire IDT on-the-fly, and then load it into 
 system. It links to various things in "isr.asm".
 */
 #include <stdint.h>
-#include "idt.h"
 #include "kernel.h"
+#include "inline.h"
+#include "screen.h"
 
 //External Symbols
 //Interrupt Service Routine Wrappers (from ISR.ASM)
@@ -106,4 +107,27 @@ inline void lidt(uint32_t base, uint16_t size)
 	IDTR.base = base;
 	__asm__ volatile ("lidt [%0]" : : "m"(IDTR));
 	__asm__ volatile ("sti");
+}
+
+void Interrupt(isr_registers_t* regs)
+{	
+	if (regs->intvec >= 0x28) outb(0xA0, 0x20); //Reset Slave PIC
+	outb(0x20, 0x20); //Reset Master PIC
+	
+	if (intHandlers[regs->intvec] != 0)
+	{
+		((isr_t)intHandlers[regs->intvec])(regs);
+	}
+	else if (regs->intvec < 0x20 || regs->intvec > 0x30)
+	{
+		Output("\nUnhandled Interrupt %d (0x%x)!", regs->intvec, regs->intvec);
+		Output("\nFault At EIP: 0x%x", regs->eip);
+		panic();
+		__asm__ volatile("hlt");
+	}
+}
+
+void registerISR(uint8_t idx, isr_t isr)
+{
+	intHandlers[idx] = isr;
 }

@@ -10,6 +10,7 @@ Contains functions related to setting up and managing page tables.
 
 #include <stdint.h>
 #include "kernel.h"
+#include "inline.h"
 #include "paging.h"
 extern void* kernel_end;
 
