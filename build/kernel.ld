@@ -12,11 +12,12 @@ INPUT(obj/paging.o)
 /*INPUT(obj/vmm.o)*/
 INPUT(obj/pmm.o)
 INPUT(obj/memory.o)
-INPUT(obj/kthread.o)
 INPUT(obj/scheduler.o)
 INPUT(obj/keyboard.o)
 INPUT(obj/screen.o)
 INPUT(obj/inline.o)
+INPUT(obj/ramdisk.o)
+INPUT(obj/ykfs.o)
 SECTIONS
 {
 	. = 0x100000;
@@ -33,7 +34,6 @@ SECTIONS
 	.bss : {
 		*(COMMON)
 		*(.bss)
-		*(.stack)
 	}
 	. = ALIGN(4096);
 	kernel_end = .;

@@ -13,6 +13,7 @@ Manages and provides allocation/deallocation functionality for physical memory.
 #include <stddef.h>
 #include "pmm.h"
 #include "kernel.h"
+#include "inline.h"
 
 uint32_t free_pages = 0;
 

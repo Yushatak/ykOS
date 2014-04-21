@@ -13,6 +13,7 @@ Contains convenience functions which wrap the PMM, VMM, and paging into a simple
 #include "kernel.h"
 #include "paging.h"
 #include "pmm.h"
+#include "screen.h"
 
 uint32_t* get_address_space(size_t size_in_bytes)
 {
@@ -40,4 +41,25 @@ uint32_t* get_address_space(size_t size_in_bytes)
 		PGD[i] |= 0x7; //User Table
 	}
 	return PGD;
+}
+
+intptr_t get_linked_pages(size_t size_in_bytes)
+{
+	int page_count = size_in_bytes/4096;
+	if (size_in_bytes%4096 > 0) page_count++; //Account for partial page.
+	uint32_t pages[page_count]; //Temporary list while building linked list.
+	intptr_t ret = 0; //Return value - will be address of first page.
+	for (int i = 0; i < page_count; i++)
+	{
+		//Allocate page and put into linked list.
+		uint32_t paddr = (uint32_t)pmm_alloc();
+		pages[i] = paddr;
+		uint32_t* page = (uint32_t*)pages[i];
+		page[0] = 0; //Explicitly clear entry from old linked list this page may have been in.
+		if (ret == 0) ret = pages[i]; //Assign first page as ret.
+		else ((uint32_t*)pages[i-1])[0] = (uint32_t)page;
+	}
+	uint32_t* last_page = (uint32_t*)pages[page_count - 1];
+	last_page[0] = pages[0]; //Loop the list.
+	return ret;
 }

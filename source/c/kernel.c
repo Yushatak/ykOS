@@ -24,11 +24,12 @@ Kernel Memory Map
 #include "keyboard.h"
 #include "multiboot.h"
 #include "paging.h"
-#include "kthread.h"
 #include "pmm.h"
 #include "memory.h"
 #include "commands.h"
 #include "scheduler.h"
+#include "drivers/ramdisk.h"
+#include "drivers/ykfs.h"
 
 //Macro Functions - Be sure to use inline when appropriate.
 #define CHECK_FLAG(flags, bit) ((flags) & (1 << (bit)))
@@ -426,8 +427,30 @@ void CommandParser()
 }
 
 void TestFunction()
-{
-	for (;;);//Output("\nTicks: %d", ticks); };
+{		
+	intptr_t ramdisk = get_ramdisk(8192, 256);
+	Output("\nRamdisk at 0x%x", ramdisk);
+	uintptr_t entries = ykfs_get_entries(ramdisk);
+	Output("\nEntries start at 0x%x", entries);
+	size_t variable_size = ((ykfs_header_t*)ramdisk)->format.FatEntryVariableSize;
+	entries += variable_size * 3 * 7;
+	uintptr_t temp = entries;
+	memCopyRange("Test.yx", (char*)entries, sizeof("Test.yx"));
+	uint32_t* uie = (uint32_t*)temp;
+	Output("\nName written at 0x%x", uie);
+	uie+=4;
+	*uie = 400;
+	Output("\nAddress written at 0x%x", uie);
+	uie+=4;
+	*uie = 666;
+	Output("\nSize written at 0x%x", uie);
+	Output("\nString Length: %d Bytes", sizeof("Test.yx"));
+	intptr_t result = ykfs_find_entry(ramdisk, "Test.yx");
+	Output("\nResult: 0x%x", result);
+	Output("\nFilename: %s", (char*)result);
+	Output("\nAddress: 0x%x", *((uint32_t*)result + 4));
+	Output("\nSize: %d Bytes", *((uint32_t*)result + 8));
+	for (;;);
 }
 
 void ClearString(char* string, size_t length)

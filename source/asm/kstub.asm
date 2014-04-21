@@ -21,11 +21,11 @@ dd cMagic
 dd cFlags
 dd cChecksum
 
-section .stack
+section .bss
 global stack_start, stack_end
 stack_end:
 align 4
-times 16384 db 0
+resb 16384 ;16k
 stack_start:
 
 section .text

@@ -15,7 +15,6 @@ Functions for managing thread creation, manipulation, and scheduling.
 #include "screen.h"
 #include "memory.h"
 #include "pmm.h"
-#include "kthread.h"
 #include "scheduler.h"
 
 //Defines
@@ -45,7 +44,7 @@ void initialize_rings()
 	boot_thread->sleeping = false;
 	current_thread = boot_thread;
 	initialize_thread(boot_thread);
-	/*
+	
 	ring[0]->thread_count++;
 	thread_t* test_thread = (thread_t*)(ring[0] + sizeof(ring_t) + sizeof(thread_t));
 	test_thread->ring = 0;
@@ -62,10 +61,10 @@ void initialize_rings()
 	test_thread->next_thread = boot_thread;
 	test_thread->previous_thread = boot_thread;
 	boot_thread->next_thread = test_thread;
-	boot_thread->previous_thread = test_thread;*/
+	boot_thread->previous_thread = test_thread;
 	
-	boot_thread->next_thread = boot_thread;
-	boot_thread->previous_thread = boot_thread;
+	/*boot_thread->next_thread = boot_thread;
+	boot_thread->previous_thread = boot_thread;*/
 	
 	ring[1] = (ring_t*)pmm_alloc();
 	ring[1]->rid = 1;
