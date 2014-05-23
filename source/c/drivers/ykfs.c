@@ -19,17 +19,19 @@ Yushatak filesystem (ykFS) driver.
 void ykfs_format_memory(uintptr_t base, size_t size_in_bytes, size_t cluster_size, size_t fat_width, uint32_t reserved_sector_count)
 {
 	ykfs_header_t* header = (ykfs_header_t*)base;
-	uintptr_t ykfs_end = base + size_in_bytes;
 	header->format.FatEntryVariableSize = fat_width/8;
 	header->format.ClusterSize = cluster_size;
 	header->format.ReservedSectors = reserved_sector_count;
-	uintptr_t ykfs_entries = ykfs_get_entries(base);
+	header->format.Length = size_in_bytes - sizeof(ykfs_header_t) - (512*reserved_sector_count);
+	header->format.EntryCount = header->format.Length / header->format.FatEntryVariableSize / 3;
+	ykfs_wipe_entries(base);
 }
 
 void ykfs_wipe_entries(uintptr_t ykfs)
 {
+	ykfs_header_t* header = (ykfs_header_t*)ykfs;
 	uintptr_t entries = ykfs_get_entries(ykfs);
-	
+	memFillD((void*)entries, header->format.EntryCount * header->format.FatEntryVariableSize * 3, 0);
 }
 
 uintptr_t ykfs_get_entries(uintptr_t ykfs)
@@ -47,19 +49,11 @@ uintptr_t ykfs_find_entry(uintptr_t ykfs, const char* name)
 	ykfs_header_t* header = (ykfs_header_t*)ykfs;
 	size_t variable_size = header->format.FatEntryVariableSize;
 	uintptr_t entries = ykfs_get_entries(ykfs);
-	uintptr_t page = entries;
 	size_t entry_size = variable_size * 3;
-	size_t entry_count = ((4096 - sizeof(ykfs_header_t))/variable_size/3);
-	int i = 0;
-	//while (((char*)entries)[0] != name[0])
+	size_t entry_count = ((4096 - sizeof(ykfs_header_t))/variable_size/3);\
 	while (!StringCompare((char*)entries, (char*)name))
 	{
 		entries += entry_size;
-		if (i >= page + 4096) 
-		{
-			entries = *(uint32_t*)page;
-			page = entries;
-		}
 	}
 	return (uintptr_t)entries;
 }

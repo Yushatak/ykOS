@@ -18,6 +18,7 @@ This contains the code for individual built-in command applets in the kernel she
 #include "commands.h"
 #include "memory.h"
 #include "vmm.h"
+#include "drivers/ykfs.h"
 
 void cmd_Convert(char* args)
 {
@@ -102,3 +103,31 @@ void cmd_Free(char* args)
 	Output(args);
 	Output(" has been freed.");
 }*/
+
+void cmd_List(char* args)
+{
+	uintptr_t ykfs = charsToInt(args);
+	ykfs_header_t* header = (ykfs_header_t*)ykfs;
+	size_t variable_size = header->format.FatEntryVariableSize;
+	uintptr_t entries = ykfs_get_entries(ykfs);
+	size_t entry_size = variable_size * 3;
+	size_t entry_count = header->format.EntryCount;
+	int file_count = 0;
+	uint32_t space_used = 0;
+	for (int i = 0; i < entry_count; i++)
+	{
+		size_t filesize = *((uint32_t*)entries + 8);
+		if (filesize > 0)
+		{
+			Output("\n%s", (char*)entries);
+			//Output("\nAddress: 0x%x", *((uint32_t*)entries + 4));
+			Output(" - %d Bytes", filesize);
+			space_used += filesize;
+			file_count++;
+		}	
+		entries += entry_size;	
+	}
+	uint32_t space_total = (header->format.Length) - (entry_count * entry_size);
+	Output("\n%d/%d Files", file_count, entry_count);
+	Output("\n%d/%d Bytes Used", space_used, space_total);
+}

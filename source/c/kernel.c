@@ -371,6 +371,11 @@ void CommandParser()
 		if (splitPos == 0) Output("Invalid Argument(s).\n");
 		else cmd_Page(splitPos);
 	}
+	else if (StartsWith(cmdbuffer, "ls ") || StartsWith(cmdbuffer, "dir "))
+	{
+		Output("-------\nListing\n-------");
+		cmd_List(splitPos);
+	}
 	else if (StringCompare(cmdbuffer, "clear") || StringCompare(cmdbuffer, "cls"))
 	{
 		ClearScreen();
@@ -428,28 +433,30 @@ void CommandParser()
 
 void TestFunction()
 {		
-	intptr_t ramdisk = get_ramdisk(8192, 256);
+	uintptr_t ramdisk = get_ramdisk(16384, 256);
 	Output("\nRamdisk at 0x%x", ramdisk);
 	uintptr_t entries = ykfs_get_entries(ramdisk);
 	Output("\nEntries start at 0x%x", entries);
 	size_t variable_size = ((ykfs_header_t*)ramdisk)->format.FatEntryVariableSize;
-	entries += variable_size * 3 * 7;
 	uintptr_t temp = entries;
-	memCopyRange("Test.yx", (char*)entries, sizeof("Test.yx"));
+	memCopyRange("Test.hex", (char*)entries, sizeof("Test.hex"));
 	uint32_t* uie = (uint32_t*)temp;
 	Output("\nName written at 0x%x", uie);
 	uie+=4;
-	*uie = 400;
+	*uie = entries + (((ykfs_header_t*)ramdisk)->format.EntryCount * variable_size * 3);
+	*(uint32_t*)(*uie) = 0xDEAD;
+	Output("\nData written at 0x%x", *uie);
 	Output("\nAddress written at 0x%x", uie);
 	uie+=4;
-	*uie = 666;
+	*uie = sizeof(uint32_t);
 	Output("\nSize written at 0x%x", uie);
-	Output("\nString Length: %d Bytes", sizeof("Test.yx"));
-	intptr_t result = ykfs_find_entry(ramdisk, "Test.yx");
+	Output("\nString Length: %d Bytes", sizeof("Test.hex"));
+	intptr_t result = ykfs_find_entry(ramdisk, "Test.hex");
 	Output("\nResult: 0x%x", result);
 	Output("\nFilename: %s", (char*)result);
 	Output("\nAddress: 0x%x", *((uint32_t*)result + 4));
 	Output("\nSize: %d Bytes", *((uint32_t*)result + 8));
+	Output("\nData: 0x%x", *(uint32_t*)*((uint32_t*)result + 4));
 	for (;;);
 }
 
@@ -620,6 +627,15 @@ void memFillW(void* address, int length, uint16_t value)
 {
 	int limit = (int)address + length;
 	for (uint16_t* addr = address; (int)addr <= limit; addr+=2)
+	{
+		*addr = value;
+	}
+}
+
+void memFillD(void* address, int length, uint32_t value)
+{
+	int limit = (int)address + length;
+	for (uint32_t* addr = address; (int)addr <= limit; addr+=4)
 	{
 		*addr = value;
 	}

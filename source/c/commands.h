@@ -17,3 +17,4 @@ void cmd_Creg(void);
 void cmd_Page(char* args);
 //void cmd_Check(char* args);
 //void cmd_Free(char* args);
+void cmd_List(char* args);

@@ -17,6 +17,8 @@ typedef struct ykfs_format_info
 	uint16_t FatEntryVariableSize;
 	uint32_t ClusterSize;
 	uint32_t ReservedSectors;
+	uint32_t Length;
+	uint32_t EntryCount;
 } ykfs_format_info_t;
 
 typedef struct ykfs_header
@@ -29,3 +31,5 @@ typedef struct ykfs_header
 //Function Declarations
 uintptr_t ykfs_get_entries(uintptr_t ykfs);
 uintptr_t ykfs_find_entry(uintptr_t ykfs, const char* name);
+void ykfs_wipe_entries(uintptr_t ykfs);
+void ykfs_format_memory(uintptr_t base, size_t size_in_bytes, size_t cluster_size, size_t fat_width, uint32_t reserved_sector_count);
