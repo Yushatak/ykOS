@@ -17,6 +17,6 @@ extern void LinearGDT();
 
 //Function Declarations
 uint32_t* get_address_space(size_t size_in_bytes);
-intptr_t get_linked_pages(size_t size_in_bytes);
+uintptr_t get_linked_pages(size_t size_in_bytes);
 
 //Inline

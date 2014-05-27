@@ -25,6 +25,7 @@ void ykfs_format_memory(uintptr_t base, size_t size_in_bytes, size_t cluster_siz
 	header->format.Length = size_in_bytes - sizeof(ykfs_header_t) - (512*reserved_sector_count);
 	header->format.EntryCount = header->format.Length / header->format.FatEntryVariableSize / 3;
 	ykfs_wipe_entries(base);
+	//memFillD((void*)(ykfs_get_entries(base) + header->format.EntryCount * header->format.FatEntryVariableSize * 3), header->format.Length - header->format.EntryCount * header->format.FatEntryVariableSize * 3,  0);
 }
 
 void ykfs_wipe_entries(uintptr_t ykfs)
