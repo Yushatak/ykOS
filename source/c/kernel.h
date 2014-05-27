@@ -14,6 +14,7 @@ for kernel functions.
 #include <stdarg.h>
 #include "idt.h"
 
+//Variables
 bool ring_init;
 
 //Function Declarations

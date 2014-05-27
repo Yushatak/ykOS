@@ -45,7 +45,7 @@ uint32_t* get_address_space(size_t size_in_bytes)
 
 uintptr_t get_linked_pages(size_t size_in_bytes)
 {
-	int page_count = size_in_bytes/4096;
+	size_t page_count = size_in_bytes/4096;
 	if (size_in_bytes%4096 > 0) page_count++; //Account for partial page.
 	uint32_t pages[page_count]; //Temporary list while building linked list.
 	uintptr_t ret = 0; //Return value - will be address of first page.
