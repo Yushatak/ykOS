@@ -16,6 +16,7 @@ for kernel functions.
 
 //Variables
 bool ring_init;
+uintptr_t current_address;
 
 //Function Declarations
 uint32_t charsToInt(char* in);

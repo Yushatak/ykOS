@@ -107,6 +107,7 @@ void cmd_Free(char* args)
 void cmd_List(char* args)
 {
 	uintptr_t ykfs = charsToInt(args);
+	Output("\nFiles at 0x%x", ykfs);
 	ykfs_header_t* header = (ykfs_header_t*)ykfs;
 	size_t variable_size = header->format.FatEntryVariableSize;
 	uintptr_t entries = ykfs_get_entries(ykfs);
@@ -114,10 +115,12 @@ void cmd_List(char* args)
 	size_t entry_count = header->format.EntryCount;
 	int file_count = 0;
 	uint32_t space_used = 0;
+	uint32_t space_total = (header->format.Length) - (entry_count * entry_size);
 	for (int i = 0; i < entry_count; i++)
 	{
 		size_t filesize = *((uint32_t*)entries + 8);
-		if (filesize > 0)
+		//Filter bullshit entries.. Investigate reason for them later.
+		if (filesize > 0 && filesize < space_total && filesize < (space_total - space_used))
 		{
 			Output("\n%s", (char*)entries);
 			//Output("\nAddress: 0x%x", *((uint32_t*)entries + 4));
@@ -127,7 +130,32 @@ void cmd_List(char* args)
 		}	
 		entries += entry_size;	
 	}
-	uint32_t space_total = (header->format.Length) - (entry_count * entry_size);
 	Output("\n%d/%d Files", file_count, entry_count);
 	Output("\n%d/%d Bytes Used", space_used, space_total);
+}
+
+void cmd_Read(char* args, char mode)
+{
+	ykfs_header_t* header = (ykfs_header_t*)current_address;
+	size_t variable_size_bytes = header->format.FatEntryVariableSize / 8;
+	uint32_t* entry = (uint32_t*)ykfs_find_entry(current_address, args);
+	char* address = (char*)*((uint32_t*)(entry + variable_size_bytes));
+	size_t size = *((uint32_t*)entry + (variable_size_bytes * 2));
+	Output("\n");
+	size_t increment = 0;
+	if (mode == 'b') increment = sizeof(uint32_t);
+	else if (mode == 't') increment = sizeof(char);
+	for (uintptr_t* i = (uintptr_t*)address; i <= (uintptr_t*)(address + size); i += increment)
+	{
+		if (mode == 'b')
+		{
+			uint32_t n = *(uint32_t*)i;
+			Output("%x", n);
+		}
+		else if (mode == 't')
+		{
+			Output("%s", i);
+		}
+	}
+	Output("\nFile %s is at 0x%x and is %d bytes long.", args, address, size);
 }

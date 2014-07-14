@@ -376,6 +376,29 @@ void CommandParser()
 		Output("-------\nListing\n-------");
 		cmd_List(splitPos);
 	}
+	else if (StartsWith(cmdbuffer, "type ") || StartsWith(cmdbuffer, "cat ") || StartsWith(cmdbuffer, "read "))
+	{
+		if (splitPos == 0) Output("Invalid Argument(s).\n");
+		else
+		{
+			Output("\nContents of %s:\n", splitPos);
+			cmd_Read(splitPos, 't');
+		}
+	}
+	else if (StartsWith(cmdbuffer, "bin2hex "))
+	{
+		if (splitPos == 0) Output("Invalid Argument(s).\n");
+		else
+		{
+			Output("\nContents of %s:\n", splitPos);
+			cmd_Read(splitPos, 'b');
+		}
+	}
+	else if (StartsWith(cmdbuffer, "cd "))
+	{
+		current_address = charsToInt(splitPos);
+		Output("\nCurrent location set to 0x%x.", current_address);
+	}
 	else if (StringCompare(cmdbuffer, "clear") || StringCompare(cmdbuffer, "cls"))
 	{
 		ClearScreen();
@@ -418,6 +441,10 @@ void CommandParser()
 	else if (StringCompare(cmdbuffer, "dump"))
 	{
 		panic();
+	}
+	else if (StringCompare(cmdbuffer, "cwd"))
+	{
+		Output("Current Location: 0x%x", current_address);
 	}
 	else if (StringCompare(cmdbuffer, "ticks"))
 	{
