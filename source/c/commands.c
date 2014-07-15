@@ -20,6 +20,8 @@ This contains the code for individual built-in command applets in the kernel she
 #include "vmm.h"
 #include "drivers/ykfs.h"
 
+#define BOCHS_BP() __asm__ volatile ("xchg bx,bx");
+
 void cmd_Convert(char* args)
 {
 	char result[keybuffer_size*6]; //up to 6 chars out per input char, so multiply by 6
@@ -107,11 +109,16 @@ void cmd_Free(char* args)
 void cmd_List(char* args)
 {
 	uintptr_t ykfs = charsToInt(args);
+	if (!ykfs_check_format(ykfs)) 
+	{
+		Output("\nInvalid filesystem format.");
+		return;		
+	}
 	Output("\nFiles at 0x%x", ykfs);
 	ykfs_header_t* header = (ykfs_header_t*)ykfs;
 	size_t variable_size = header->format.FatEntryVariableSize;
 	uintptr_t entries = ykfs_get_entries(ykfs);
-	size_t entry_size = variable_size * 3;
+	size_t entry_size = variable_size * 3 / 8;
 	size_t entry_count = header->format.EntryCount;
 	int file_count = 0;
 	uint32_t space_used = 0;
@@ -119,8 +126,7 @@ void cmd_List(char* args)
 	for (int i = 0; i < entry_count; i++)
 	{
 		size_t filesize = *((uint32_t*)entries + 8);
-		//Filter bullshit entries.. Investigate reason for them later.
-		if (filesize > 0 && filesize < space_total && filesize < (space_total - space_used))
+		if (filesize > 0)
 		{
 			Output("\n%s", (char*)entries);
 			//Output("\nAddress: 0x%x", *((uint32_t*)entries + 4));
@@ -139,6 +145,11 @@ void cmd_Read(char* args, char mode)
 	ykfs_header_t* header = (ykfs_header_t*)current_address;
 	size_t variable_size_bytes = header->format.FatEntryVariableSize / 8;
 	uint32_t* entry = (uint32_t*)ykfs_find_entry(current_address, args);
+	if (entry == 0) 
+	{
+		Output("\nFile not found.");
+		return;
+	}
 	char* address = (char*)*((uint32_t*)(entry + variable_size_bytes));
 	size_t size = *((uint32_t*)entry + (variable_size_bytes * 2));
 	Output("\n");

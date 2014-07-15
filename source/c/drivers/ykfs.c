@@ -9,6 +9,7 @@ Yushatak filesystem (ykFS) driver.
 */
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "../memory.h"
 #include "ramdisk.h"
 #include "ykfs.h"
@@ -19,6 +20,10 @@ Yushatak filesystem (ykFS) driver.
 void ykfs_format_memory(uintptr_t base, size_t size_in_bytes, size_t cluster_size, size_t fat_width, uint32_t reserved_sector_count)
 {
 	ykfs_header_t* header = (ykfs_header_t*)base;
+	header->format.magic_1 = 'Y';
+        header->format.magic_2 = 'K';
+        header->format.magic_3 = 'F';
+	header->format.magic_4 = 'S';
 	header->format.FatEntryVariableSize = fat_width/8;
 	header->format.ClusterSize = cluster_size;
 	header->format.ReservedSectors = reserved_sector_count;
@@ -47,13 +52,34 @@ uintptr_t ykfs_get_entries(uintptr_t ykfs)
 uintptr_t ykfs_find_entry(uintptr_t ykfs, const char* name)
 {
 	ykfs_header_t* header = (ykfs_header_t*)ykfs;
+	if (!ykfs_check_format(ykfs))
+	{
+		Output("\nInvalid filesystem format.");
+		return 0;
+	}
 	size_t variable_size = header->format.FatEntryVariableSize;
 	uintptr_t entries = ykfs_get_entries(ykfs);
-	size_t entry_size = variable_size * 3;
-	size_t entry_count = ((4096 - sizeof(ykfs_header_t))/variable_size/3);\
-	while (!StringCompare((char*)entries, (char*)name))
+	size_t entry_size = variable_size * 3 / 8;
+	size_t entry_count = header->format.EntryCount;
+	for (int i = 0; i < entry_count; i++)
 	{
-		entries += entry_size;
+		if (StringCompare((char*)entries, (char*)name))
+			return (uintptr_t)entries;
+		else
+			entries += entry_size;
 	}
-	return (uintptr_t)entries;
+	Output("Result: 0x%x", (uintptr_t)entries);
+	if (StringCompare((char*)entries, (char*)name))
+		return (uintptr_t)entries;
+	else return 0;
+}
+
+bool ykfs_check_format(uintptr_t ykfs)
+{
+	ykfs_header_t* header = (ykfs_header_t*)ykfs;
+	return (header->format.magic_1 == 'Y' &&
+		   header->format.magic_2 == 'K' &&
+		   header->format.magic_3 == 'F' &&
+		   header->format.magic_4 == 'S'	
+	);
 }
