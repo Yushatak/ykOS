@@ -45,7 +45,7 @@ char status[79] = {0};
 uint8_t* memory = (uint8_t*)0x0;
 
 //Other Variable Declarations
-char prompt[] = "ykOS>";
+char* prompt = "ykOS>";
 int mem_total = 0;
 int mem_low = 0;
 int mem_high = 0;
@@ -285,7 +285,7 @@ void TimerHandler(isr_registers_t* regs)
 				};
 			}
 		}
-		OutputLine(statusLine, "%u/%u/%u - %u:%u:%u %s", month, day, year, hour, minute, second, afternoon ? "PM" : "AM");
+		OutputLine(statusLine, "ykOS - %2/%2/%2 - %2:%2:%2 %s", month, day, year, hour, minute, second, afternoon ? "PM" : "AM");
 	}
 	if (ticks % 10 == 0) next_thread();
 }
@@ -396,6 +396,7 @@ void CommandParser()
 	}
 	else if (StartsWith(cmdbuffer, "cd "))
 	{
+		prompt = splitPos + '>';
 		current_address = charsToInt(splitPos);
 		Output("\nCurrent location set to 0x%x.", current_address);
 	}
@@ -619,6 +620,14 @@ void uintToDecChars(unsigned int val, char* out, size_t len)
 		val /= 10;
 	}
 	p += digits;
+}
+
+void uintTo2PaddedDecChars(unsigned int val, char* out, size_t len)
+{
+	out[0] = '0';
+	out[1] = dec_chars[val % 10];
+	val /= 10;
+	if (val > 0) out[0] = dec_chars[val % 10];
 }
 
 void intToDecChars(int val, char* out, size_t len)

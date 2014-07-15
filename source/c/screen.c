@@ -132,6 +132,11 @@ void base_Output(const char *source, va_list args)
 					ptr = buffer;
 					goto string;
 					break;
+				case '2':
+					uintTo2PaddedDecChars(va_arg(args, unsigned int), buffer, 32);
+					ptr = buffer;
+					goto string;
+					break;
 				case 'h':
 				case 'x':
 					uintToHexChars(va_arg(args, unsigned int), buffer, 32);

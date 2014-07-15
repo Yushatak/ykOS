@@ -17,6 +17,7 @@ for kernel functions.
 //Variables
 bool ring_init;
 uintptr_t current_address;
+char* prompt;
 
 //Function Declarations
 uint32_t charsToInt(char* in);
@@ -28,6 +29,7 @@ void memCopyRange(char *source, char *dest, int length);
 char NibbleToChar(int nibble);
 void uintToHexChars(unsigned int val, char* out, size_t len);
 void uintToDecChars(unsigned int val, char* out, size_t len);
+void uintTo2PaddedDecChars(unsigned int val, char* out, size_t len);
 void intToDecChars(int val, char* out, size_t len);
 void memFill(void* address, int length, uint8_t value);
 void memFillW(void* address, int length, uint16_t value);
