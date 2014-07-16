@@ -40,12 +40,14 @@ Kernel Memory Map
 
 //String Declarations
 char status[79] = {0};
+char prompt[79] = "0x00000000>";
 
 //Pointers
 uint8_t* memory = (uint8_t*)0x0;
 
 //Other Variable Declarations
-char* prompt = "ykOS>";
+uintptr_t current = 0x00000000;
+int promptLength = 11;
 int mem_total = 0;
 int mem_low = 0;
 int mem_high = 0;
@@ -163,8 +165,8 @@ int main(multiboot_info_t* boot_mbi)
 	initialize_screen();
 	
 	OutputAt(prompt, 0, promptLine);
-	SetCursor(sizeof(prompt) - 1, promptLine);
-	OutputLine(statusLine, "%u/%u/%u - %u:%u:%u %s", month, day, year, hour, minute, second, afternoon ? "PM" : "AM");
+	SetCursor(promptLength, promptLine);
+	OutputLine(statusLine, "ykOS - %u/%u/%u - %u:%u:%u %s", month, day, year, hour, minute, second, afternoon ? "PM" : "AM");
 	
 	//Initialize threading rings.
 	initialize_rings();
@@ -197,7 +199,7 @@ void KeyboardHandler(isr_registers_t* regs)
 		keybuffer_ptr = 0;
 		CommandParser();
 		OutputAt(prompt, 0, promptLine);
-		SetCursor(sizeof(prompt) - 1, promptLine);
+		SetCursor(promptLength, promptLine);
 		return;
 	}
 	
@@ -248,8 +250,8 @@ void KeyboardHandler(isr_registers_t* regs)
 			}
 		}
 		OutputAt(prompt, 0, promptLine);
-		OutputAt(keybuffer, sizeof(prompt) - 1, promptLine);
-		SetCursor(sizeof(prompt) - 1 + keybuffer_ptr, promptLine);
+		OutputAt(keybuffer, promptLength, promptLine);
+		SetCursor(promptLength + keybuffer_ptr, promptLine);
 	}
 	//else it's an unhandled scancode.
 }
@@ -396,15 +398,19 @@ void CommandParser()
 	}
 	else if (StartsWith(cmdbuffer, "cd "))
 	{
-		prompt = splitPos + '>';
-		current_address = charsToInt(splitPos);
-		Output("\nCurrent location set to 0x%x.", current_address);
+		current = charsToInt(splitPos);
+		uintToHexChars(current, prompt, promptLength);
+		pad_left(prompt, '0', promptLength - 1);
+		prompt[0] = '0';
+		prompt[1] = 'x';
+		prompt[promptLength - 1] = '>';
+		Output("\nCurrent location set to 0x%x.", current);
 	}
 	else if (StringCompare(cmdbuffer, "clear") || StringCompare(cmdbuffer, "cls"))
 	{
 		ClearScreen();
 		OutputAt(prompt, 0, promptLine);
-		SetCursor(sizeof(prompt) - 1, promptLine);
+		SetCursor(promptLength, promptLine);
 		CursorX = 0;
 	}
 	else if (StringCompare(cmdbuffer, "creg"))
@@ -445,7 +451,13 @@ void CommandParser()
 	}
 	else if (StringCompare(cmdbuffer, "cwd"))
 	{
-		Output("Current Location: 0x%x", current_address);
+		Output("Current Location: 0x%x", current);
+	}
+	else if (StringCompare(cmdbuffer, "nxt"))
+	{
+		uintptr_t result = ykfs_next_empty(current);
+		if (result != 0) Output("\nNext Free File Socket: 0x%x", result);
+		else Output("\nError: no free file socket found.");
 	}
 	else if (StringCompare(cmdbuffer, "ticks"))
 	{
@@ -607,6 +619,24 @@ void uintToHexChars(unsigned int val, char* out, size_t len)
 	//out[p] = 0x0;
 }
 
+void uintToPrefixedHexChars(unsigned int val, char* out, size_t len)
+{
+	ClearString(out, len);
+	size_t p = 0;
+	out[p++] = '0';
+	out[p++] = 'x';
+	size_t digits = 1;
+	for (unsigned int length = val; length >= 16; length /= 16) digits++;
+	for (size_t i = digits; i != 0; i--)
+	{
+		size_t pos = i - 1;
+		out[p + pos] = nybble_chars[val % 16];
+		val /= 16;
+	}
+	p += digits;
+	out[p] = 0x0;
+}
+
 void uintToDecChars(unsigned int val, char* out, size_t len)
 {
 	ClearString(out, len);
@@ -693,4 +723,53 @@ void sti()
 {
 	current_thread->interrupt_state = true;
 	__asm__ volatile("sti");
+}
+
+int strlen(char* target)
+{
+	int count = 0;
+	char c = target[count];
+	while (c != 0)
+	{
+		c = target[++count];
+	}
+	return count;
+}
+
+void pad_left(char target[], char c, int length)
+{
+	int len = strlen(target);
+	int diff = length - len;
+	char temp[length];
+	for (int i = 0; i < length; i++)
+	{
+		if (i < diff) temp[i] = c;
+		else temp[i] = target[i - diff];
+	}
+	int last_i = 0;
+	for (int i = 0; i < length; i++)
+	{
+		target[i] = temp[i];
+		last_i = i;
+	}
+	target[last_i + 1] = 0;
+}
+
+void pad_right(char target[], char c, int length)
+{
+	int len = strlen(target);
+	char temp[length];
+	for (int i = 0; i < length; i++)
+	{
+		if (i < len) temp[i] = c;
+		else temp[i] = target[i];
+	}
+	int last_i = 0;
+	for (int i = 0; i < length; i++)
+	{
+		target[i] = temp[i];
+		last_i = i;
+	}
+	target[last_i + 1] = 0;
+	
 }

@@ -16,8 +16,8 @@ for kernel functions.
 
 //Variables
 bool ring_init;
-uintptr_t current_address;
-char* prompt;
+uintptr_t current;
+char prompt[79];
 
 //Function Declarations
 uint32_t charsToInt(char* in);
@@ -28,6 +28,7 @@ void OutputLengthToPort(char *source, int port, int length);
 void memCopyRange(char *source, char *dest, int length);
 char NibbleToChar(int nibble);
 void uintToHexChars(unsigned int val, char* out, size_t len);
+void uintToPrefixedHexChars(unsigned int val, char* out, size_t len);
 void uintToDecChars(unsigned int val, char* out, size_t len);
 void uintTo2PaddedDecChars(unsigned int val, char* out, size_t len);
 void intToDecChars(int val, char* out, size_t len);
@@ -46,6 +47,9 @@ void cli();
 void sti();
 uint8_t cmos_read(uint8_t reg);
 void CommandParser();
+void pad_left(char target[], char c, int length);
+void pad_right(char target[], char c, int length);
+int strlen(char* target);
 
 //Handlers
 void Interrupt(isr_registers_t* regs);

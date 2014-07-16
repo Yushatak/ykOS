@@ -64,14 +64,37 @@ uintptr_t ykfs_find_entry(uintptr_t ykfs, const char* name)
 	for (int i = 0; i < entry_count; i++)
 	{
 		if (StringCompare((char*)entries, (char*)name))
-			return (uintptr_t)entries;
+			return entries;
 		else
 			entries += entry_size;
 	}
-	Output("Result: 0x%x", (uintptr_t)entries);
+	Output("Result: 0x%x", entries);
 	if (StringCompare((char*)entries, (char*)name))
-		return (uintptr_t)entries;
+		return entries;
 	else return 0;
+}
+
+uintptr_t ykfs_next_empty(uintptr_t ykfs)
+{
+	ykfs_header_t* header = (ykfs_header_t*)ykfs;
+	if (!ykfs_check_format(ykfs))
+	{
+		Output("\nInvalid filesystem format.");
+		return 0;
+	}
+	size_t variable_size = header->format.FatEntryVariableSize;
+	uintptr_t entries = ykfs_get_entries(ykfs);
+	//Not sure why its wonky here but these are the right values.
+	size_t entry_size = variable_size / 2 * 3; 
+	size_t entry_count = header->format.EntryCount;
+	for (int i = 0; i < entry_count; i++)
+	{
+		//Output("\n0x%x + 0x%x = 0x%x", entries, variable_size, entries + variable_size);
+		uintptr_t filesize = entries + variable_size;
+		if (*(size_t*)filesize == 0) return entries;
+		else entries += entry_size;
+	}
+	return 0;
 }
 
 bool ykfs_check_format(uintptr_t ykfs)

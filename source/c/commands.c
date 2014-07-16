@@ -111,8 +111,12 @@ void cmd_List(char* args)
 	uintptr_t ykfs = charsToInt(args);
 	if (!ykfs_check_format(ykfs)) 
 	{
-		Output("\nInvalid filesystem format.");
-		return;		
+		if (!ykfs_check_format(current))
+		{
+			Output("\nInvalid filesystem format.");
+			return;		
+		}
+		else ykfs = current;
 	}
 	Output("\nFiles at 0x%x", ykfs);
 	ykfs_header_t* header = (ykfs_header_t*)ykfs;
@@ -142,9 +146,9 @@ void cmd_List(char* args)
 
 void cmd_Read(char* args, char mode)
 {
-	ykfs_header_t* header = (ykfs_header_t*)current_address;
+	ykfs_header_t* header = (ykfs_header_t*)current;
 	size_t variable_size_bytes = header->format.FatEntryVariableSize / 8;
-	uint32_t* entry = (uint32_t*)ykfs_find_entry(current_address, args);
+	uint32_t* entry = (uint32_t*)ykfs_find_entry(current, args);
 	if (entry == 0) 
 	{
 		Output("\nFile not found.");
