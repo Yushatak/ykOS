@@ -35,6 +35,7 @@ void intToDecChars(int val, char* out, size_t len);
 void memFill(void* address, int length, uint8_t value);
 void memFillW(void* address, int length, uint16_t value);
 void memFillD(void* address, int length, uint32_t value);
+void mem_fill(uint8_t* address, size_t size, uint8_t value);
 void memFillLength(unsigned char *dest, int length, unsigned char val);
 void streamToHex(void* stream, void* hex, size_t limit);
 void ClearString(char* string, size_t length);

@@ -24,25 +24,24 @@ void ykfs_format_memory(uintptr_t base, size_t size_in_bytes, size_t cluster_siz
         header->format.magic_2 = 'K';
         header->format.magic_3 = 'F';
 	header->format.magic_4 = 'S';
-	header->format.FatEntryVariableSize = fat_width/8;
+	header->format.FatEntryVariableSize = fat_width / 8;
 	header->format.ClusterSize = cluster_size;
 	header->format.ReservedSectors = reserved_sector_count;
 	header->format.Length = size_in_bytes - sizeof(ykfs_header_t) - (512*reserved_sector_count);
 	header->format.EntryCount = header->format.Length / header->format.FatEntryVariableSize / 3;
+	header->format.EntrySize = fat_width / 8 * 3;
 	ykfs_wipe_entries(base);
 }
 
 void ykfs_wipe_entries(uintptr_t ykfs)
 {
 	ykfs_header_t* header = (ykfs_header_t*)ykfs;
-	uintptr_t entries = ykfs_get_entries(ykfs);
-	memFillD((void*)entries, header->format.EntryCount * header->format.FatEntryVariableSize * 3, 0);
+	mem_fill((uint8_t*)ykfs_get_entries(ykfs), header->format.EntryCount * header->format.EntrySize, 0);
 }
 
 uintptr_t ykfs_get_entries(uintptr_t ykfs)
 {
 	ykfs_header_t* header = (ykfs_header_t*)ykfs;
-	size_t variable_size = header->format.FatEntryVariableSize;
 	size_t reserved_sectors = header->format.ReservedSectors;
 	//Entries start after the header and any reserved sectors (512 bytes per sector).
 	uintptr_t entries = ykfs + sizeof(ykfs_header_t) + (512*reserved_sectors);
@@ -57,9 +56,8 @@ uintptr_t ykfs_find_entry(uintptr_t ykfs, const char* name)
 		Output("\nInvalid filesystem format.");
 		return 0;
 	}
-	size_t variable_size = header->format.FatEntryVariableSize;
 	uintptr_t entries = ykfs_get_entries(ykfs);
-	size_t entry_size = variable_size * 3 / 8;
+	size_t entry_size = header->format.EntrySize;
 	size_t entry_count = header->format.EntryCount;
 	for (int i = 0; i < entry_count; i++)
 	{
@@ -82,19 +80,31 @@ uintptr_t ykfs_next_empty(uintptr_t ykfs)
 		Output("\nInvalid filesystem format.");
 		return 0;
 	}
-	size_t variable_size = header->format.FatEntryVariableSize;
 	uintptr_t entries = ykfs_get_entries(ykfs);
-	//Not sure why its wonky here but these are the right values.
-	size_t entry_size = variable_size / 2 * 3; 
+	size_t variable_size = header->format.FatEntryVariableSize;
+	size_t entry_size = header->format.EntrySize;
 	size_t entry_count = header->format.EntryCount;
 	for (int i = 0; i < entry_count; i++)
 	{
-		//Output("\n0x%x + 0x%x = 0x%x", entries, variable_size, entries + variable_size);
-		uintptr_t filesize = entries + variable_size;
-		if (*(size_t*)filesize == 0) return entries;
+		if (*(size_t*)(entries + variable_size * 2) == 0) return entries;
 		else entries += entry_size;
+		//Need to make this check for the end of the FAT and return an error if exceeded.
 	}
 	return 0;
+}
+
+void ykfs_new_file(uintptr_t ykfs, uintptr_t entry, char* name, uintptr_t address, size_t size)
+{
+	ykfs_header_t* header = (ykfs_header_t*)ykfs;
+	if (!ykfs_check_format(ykfs))
+	{
+		Output("\nInvalid filesystem format.");
+		return;
+	}
+	size_t variable_size = header->format.FatEntryVariableSize;
+	memCopyRange(name, (char*)entry, sizeof(name));
+	*(uintptr_t*)(entry + variable_size) = address;
+	*(size_t*)(entry + variable_size * 2) = size;
 }
 
 bool ykfs_check_format(uintptr_t ykfs)
