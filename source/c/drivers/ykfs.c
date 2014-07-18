@@ -17,19 +17,19 @@ Yushatak filesystem (ykFS) driver.
 #include "../screen.h"
 
 //Note: this function does *not* care what is in memory, it is up to you to make sure it is safe to call it with given parameters.
-void ykfs_format_memory(uintptr_t base, size_t size_in_bytes, size_t cluster_size, size_t fat_width, uint32_t reserved_sector_count)
+void ykfs_format_memory(uintptr_t base, size_t size_in_bytes, size_t cluster_size/*, size_t fat_width*/, uint32_t reserved_sector_count)
 {
 	ykfs_header_t* header = (ykfs_header_t*)base;
 	header->format.magic_1 = 'Y';
         header->format.magic_2 = 'K';
         header->format.magic_3 = 'F';
 	header->format.magic_4 = 'S';
-	header->format.FatEntryVariableSize = fat_width / 8;
+	header->format.FatEntryVariableSize = 4; //Bytes
 	header->format.ClusterSize = cluster_size;
 	header->format.ReservedSectors = reserved_sector_count;
 	header->format.Length = size_in_bytes - sizeof(ykfs_header_t) - (512*reserved_sector_count);
-	header->format.EntryCount = header->format.Length / header->format.FatEntryVariableSize / 3;
-	header->format.EntrySize = fat_width / 8 * 3;
+	header->format.EntryCount = header->format.Length / 128;
+	header->format.EntrySize = 16; //Bytes
 	ykfs_wipe_entries(base);
 }
 
@@ -86,7 +86,7 @@ uintptr_t ykfs_next_empty(uintptr_t ykfs)
 	size_t entry_count = header->format.EntryCount;
 	for (int i = 0; i < entry_count; i++)
 	{
-		if (*(size_t*)(entries + variable_size * 2) == 0) return entries;
+		if (*(size_t*)(entries + variable_size * 3) == 0) return entries;
 		else entries += entry_size;
 		//Need to make this check for the end of the FAT and return an error if exceeded.
 	}
@@ -102,9 +102,10 @@ void ykfs_new_file(uintptr_t ykfs, uintptr_t entry, char* name, uintptr_t addres
 		return;
 	}
 	size_t variable_size = header->format.FatEntryVariableSize;
-	memCopyRange(name, (char*)entry, sizeof(name));
-	*(uintptr_t*)(entry + variable_size) = address;
-	*(size_t*)(entry + variable_size * 2) = size;
+	mem_fill((uint8_t*)entry, 64, 0);
+	memCopyRange(name + '0', (char*)entry, sizeof(name) + 1);
+	*(uintptr_t*)(entry + variable_size * 2) = address;
+	*(size_t*)(entry + variable_size * 3) = size;
 }
 
 bool ykfs_check_format(uintptr_t ykfs)

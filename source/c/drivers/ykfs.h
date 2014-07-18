@@ -38,7 +38,7 @@ typedef struct ykfs_header
 uintptr_t ykfs_get_entries(uintptr_t ykfs);
 uintptr_t ykfs_find_entry(uintptr_t ykfs, const char* name);
 void ykfs_wipe_entries(uintptr_t ykfs);
-void ykfs_format_memory(uintptr_t base, size_t size_in_bytes, size_t cluster_size, size_t fat_width, uint32_t reserved_sector_count);
+void ykfs_format_memory(uintptr_t base, size_t size_in_bytes, size_t cluster_size, /*size_t fat_width,*/ uint32_t reserved_sector_count);
 bool ykfs_check_format(uintptr_t ykfs);
 uintptr_t ykfs_next_empty(uintptr_t ykfs);
 void ykfs_new_file(uintptr_t ykfs, uintptr_t entry, char* name, uintptr_t address, size_t size);

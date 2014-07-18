@@ -14,9 +14,9 @@ Simple ramdisk driver.
 #include "../kernel.h"
 #include "../screen.h"
 
-uintptr_t get_ramdisk(size_t size_in_bytes, size_t fat_width)
+uintptr_t get_ramdisk(size_t size_in_bytes/*, size_t fat_width*/)
 {
 	uintptr_t ramdisk = get_linked_pages(size_in_bytes);
-	ykfs_format_memory(ramdisk, size_in_bytes, 4096, fat_width, 0);
+	ykfs_format_memory(ramdisk, size_in_bytes, 4096/*, fat_width*/, 0);
 	return ramdisk;
 }

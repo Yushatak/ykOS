@@ -118,41 +118,47 @@ void cmd_List(char* args)
 		}
 		else ykfs = current;
 	}
-	ykfs_header_t* header = (ykfs_header_t*)ykfs;
+	/*ykfs_header_t* header = (ykfs_header_t*)ykfs;
 	size_t variable_size = header->format.FatEntryVariableSize;
-	uint32_t* entries = (uint32_t*)ykfs_get_entries(ykfs);
-	for (uint32_t* address = entries; address < (entries + header->format.Length); address += header->format.EntrySize)
+	uint32_t* entries = (uint32_t*)ykfs_get_entries(ykfs);*/
+	/*for (int i = 0; i < header->format.EntryCount * 3; i+=3)
+	{
+		if (entries[i+2] > 0)
+			Output("\n%s/%x/%d", entries[i], entries[i+1], entries[i+2]);
+	}*/
+	
+	/*for (uint32_t* address = entries; address < (entries + header->format.Length); address += header->format.EntrySize)
 	{
 		uint32_t size = *(uint32_t*)(address + header->format.EntrySize);
 		if (size > 0)
 			Output("\n%s - %d Bytes", (char*)address, size);
-	}
-	/*Output("\nFiles at 0x%x", ykfs);
+	}*/
+	Output("\nFiles at 0x%x", ykfs);
 	ykfs_header_t* header = (ykfs_header_t*)ykfs;
 	size_t variable_size = header->format.FatEntryVariableSize;
-	uintptr_t entries = ykfs_get_entries(ykfs);
+	uint32_t* entries = (uint32_t*)ykfs_get_entries(ykfs);
 	size_t entry_size = header->format.EntrySize;
 	size_t entry_count = header->format.EntryCount;
 	int file_count = 0;
 	size_t space_used = 0;
 	size_t space_total = (header->format.Length) - (entry_count * entry_size);
-	//for (int i = 0; i < entry_count; i++)
-	for (uint32_t addr = entries; addr < (entries + header->format.Length); addr+=3)
+	for (int i = 0; i < entry_count; i++)
+	//for (uint32_t addr = entries; addr < (entries + header->format.Length); addr+=3)
 	{
-		char* name = (char*)entries;
+		char* name = (char*)entries[i * 3 + i];
 		//uintptr_t socket = entries;
-		uint32_t address = *(uint32_t*)(addr + variable_size);
-		uint32_t filesize = *(uint32_t*)(addr + variable_size * 2);
+		uint32_t address = entries[i * 3 + i + 2];
+		uint32_t filesize = entries[i * 3 + i +3];
 		//entries += entry_size;	
 		if (filesize > 0 && address > 0)
 		{
-			Output("\n0x%x: %s - 0x%x - %d Bytes", addr, name, address, filesize);
+			Output("\n0x%x: %s - 0x%x - %d Bytes", &entries[i * 3 + i], name, address, filesize);
 			space_used += filesize;
 			file_count++;
 		}	
 	}
 	Output("\n%d/%d Files", file_count, entry_count);
-	Output("\n%d/%d Bytes Used", space_used, space_total);*/
+	Output("\n%d/%d Bytes Used", space_used, space_total);
 }
 
 void cmd_Read(char* args, char mode)
@@ -165,8 +171,8 @@ void cmd_Read(char* args, char mode)
 		Output("\nFile not found.");
 		return;
 	}
-	char* address = (char*)*((uintptr_t*)(entry + variable_size));
-	size_t size = *((uint32_t*)(entry + variable_size * 2));
+	char* address = (char*)*((uintptr_t*)(entry + variable_size * 2));
+	size_t size = *((uint32_t*)(entry + variable_size * 3));
 	Output("\n");
 	size_t increment = 0;
 	if (mode == 'b') increment = sizeof(uint32_t);
