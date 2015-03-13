@@ -487,20 +487,11 @@ void CommandParser()
 
 void TestFunction()
 {		
-	uintptr_t ramdisk = get_ramdisk(4096/*, 32*/);
+	uintptr_t ramdisk = get_ramdisk(4096);
 	Output("\nRamdisk at 0x%x", ramdisk);
 	uintptr_t entries = ykfs_get_entries(ramdisk);
 	Output("\nEntries start at 0x%x", entries);
-	size_t variable_size = ((ykfs_header_t*)ramdisk)->format.FatEntryVariableSize;
-	uint32_t uie = (uint32_t)entries;
-	mem_fill((uint8_t*)uie, 64, 0);
-	char* n = "Test.hex";
-	n[8] = '0';
-	memCopyRange(n, (char*)entries, sizeof(n));
-	uie+=variable_size * 2;
-	*(uint32_t*)uie = 0x1;
-	uie+=variable_size;
-	*(uint32_t*)uie = 0x1;
+	ykfs_new_file(ramdisk, entries, "Test.hex", 1, 1);
 	for (;;);
 }
 

@@ -135,25 +135,26 @@ void cmd_List(char* args)
 	}*/
 	Output("\nFiles at 0x%x", ykfs);
 	ykfs_header_t* header = (ykfs_header_t*)ykfs;
-	size_t variable_size = header->format.FatEntryVariableSize;
-	uint32_t* entries = (uint32_t*)ykfs_get_entries(ykfs);
+	uintptr_t entries = ykfs_get_entries(ykfs);
 	size_t entry_size = header->format.EntrySize;
 	size_t entry_count = header->format.EntryCount;
 	int file_count = 0;
 	size_t space_used = 0;
-	size_t space_total = (header->format.Length) - (entry_count * entry_size);
-	for (int i = 0; i < entry_count; i++)
+	size_t space_total = header->format.Length;
+	for (uintptr_t addr = entries; addr < entries + space_total; addr+=entry_size)
 	//for (uint32_t addr = entries; addr < (entries + header->format.Length); addr+=3)
 	{
-		char* name = (char*)entries[i * 3 + i];
+		ykfs_entry_t* entry = (ykfs_entry_t*)addr;
+		////char* name = (char*)entries[i * 3 + i];
 		//uintptr_t socket = entries;
-		uint32_t address = entries[i * 3 + i + 2];
-		uint32_t filesize = entries[i * 3 + i +3];
+		////uint32_t address = entries[i * 3 + i + 4];
+		////uint32_t filesize = entries[i * 3 + i + 5];
 		//entries += entry_size;	
-		if (filesize > 0 && address > 0)
+		if (entry->size > 0 && entry->address > 0)// && entry->name[0] == 'T')
 		{
-			Output("\n0x%x: %s - 0x%x - %d Bytes", &entries[i * 3 + i], name, address, filesize);
-			space_used += filesize;
+			////&entries[i * 3 + i]
+			Output("\n0x%x: %s - 0x%x - %d Bytes", addr, entry->name, entry->address, entry->size);
+			space_used += entry->size;
 			file_count++;
 		}	
 	}
@@ -164,15 +165,14 @@ void cmd_List(char* args)
 void cmd_Read(char* args, char mode)
 {
 	ykfs_header_t* header = (ykfs_header_t*)current;
-	size_t variable_size = header->format.FatEntryVariableSize;
 	uint32_t* entry = (uint32_t*)ykfs_find_entry(current, args);
 	if (entry == 0) 
 	{
 		Output("\nFile not found.");
 		return;
 	}
-	char* address = (char*)*((uintptr_t*)(entry + variable_size * 2));
-	size_t size = *((uint32_t*)(entry + variable_size * 3));
+	char* address = (char*)*((uintptr_t*)(entry + 64));
+	size_t size = *((uint32_t*)(entry + 68));
 	Output("\n");
 	size_t increment = 0;
 	if (mode == 'b') increment = sizeof(uint32_t);

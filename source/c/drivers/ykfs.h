@@ -16,12 +16,11 @@ typedef struct ykfs_format_info
 {
 	uint16_t reserved; //JMP instruction
 	char magic_1; //Y
-	uint16_t FatEntryVariableSize;
 	char magic_2; //K
-	uint32_t ClusterSize;
 	char magic_3; //F
-	uint32_t ReservedSectors;
 	char magic_4; //S
+	uint32_t ClusterSize;
+	uint32_t ReservedSectors;
 	uint32_t Length;
 	uint32_t EntryCount;
 	uint16_t EntrySize;
@@ -33,6 +32,13 @@ typedef struct ykfs_header
 	ykfs_format_info_t format;
 	uint8_t reserved[20];
 } ykfs_header_t;
+
+typedef struct ykfs_entry
+{
+	char name[64];
+	uint32_t address;
+	uint32_t size;
+} ykfs_entry_t;
 
 //Function Declarations
 uintptr_t ykfs_get_entries(uintptr_t ykfs);
