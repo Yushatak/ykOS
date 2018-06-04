@@ -22,7 +22,7 @@ Kernel Memory Map
 #include "inline.h"
 #include "screen.h"
 #include "keyboard.h"
-#include "multiboot.h"
+//#include "multiboot.h"
 #include "paging.h"
 #include "pmm.h"
 #include "memory.h"
@@ -54,7 +54,7 @@ int mem_high = 0;
 unsigned long ticks = 0;
 unsigned long tocks = 0;
 static volatile bool wait = false;
-multiboot_info_t* mbi;
+//multiboot_info_t* mbi;
 //RTC
 uint8_t second = 0;
 uint8_t minute = 0;
@@ -70,9 +70,11 @@ extern void* stack_start;
 extern void* stack_end;
 
 //Entry Point
-int main(multiboot_info_t* boot_mbi)
+int main(/*multiboot_info_t* boot_mbi*/)
 {		
-	mbi = boot_mbi;
+	Output("\nKernel Running!");
+	
+	//mbi = boot_mbi;
 	
 	ring_init = false;
 	
@@ -107,39 +109,8 @@ int main(multiboot_info_t* boot_mbi)
 	registerISR(0x0E, &PageFaultHandler);
 	registerISR(0x30, &DumpRegisters);
 	
-	//Memory Map
-	if (CHECK_FLAG(mbi->flags, 1)) 
-	{
-		mem_low = mbi->mem_lower;
-		mem_high = mbi->mem_upper;
-		mem_total = mbi->mem_lower + mbi->mem_upper;
-		if (CHECK_FLAG(mbi->flags, 6))
-		{
-			current_page = NULL;
-			memory_map_t* mm_end = (memory_map_t*)(mbi->mmap_addr + mbi->mmap_length);
-			for (memory_map_t* mm = (memory_map_t*)(mbi->mmap_addr);
-				mm < mm_end;
-				mm = (memory_map_t*)((unsigned int)mm + mm->size + sizeof(unsigned int)))
-			{
-				uint32_t base = COMBINE_16_32(mm->base_addr_high, mm->base_addr_low);
-				uint32_t size = COMBINE_16_32(mm->length_high, mm->length_low);
-				if (base > 0 && size > 0 && mm->type == 1)
-				{
-					pmm_claim((uint32_t*)base, size);
-				}
-			}
-		}
-		else
-		{
-			Output("\nInvalid Memory Map!");
-			panic();
-		}
-	}
-	else 
-	{
-		Output("\nInvalid Flags (0x%x)!", mbi->flags);
-		panic();
-	}	
+	//Memory <1M
+	pmm_claim((uint32_t*)0x0, getMemSize());
 	
 	//Initialize Time
 	uint8_t rb = cmos_read(0x0B);
@@ -726,6 +697,13 @@ void sti()
 {
 	current_thread->interrupt_state = true;
 	__asm__ volatile("sti");
+}
+
+int getMemSize()
+{
+	int i;
+	__asm__ volatile("int 12" : "=ax" (i));
+	return i;
 }
 
 int strlen(char* target)

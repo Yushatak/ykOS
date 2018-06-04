@@ -46,6 +46,7 @@ void kernel_loop();
 void TestFunction();
 void cli();
 void sti();
+int getMemSize();
 uint8_t cmos_read(uint8_t reg);
 void CommandParser();
 void pad_left(char target[], char c, int length);

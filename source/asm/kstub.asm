@@ -29,8 +29,8 @@ resb 16384 ;16k
 stack_start:
 
 section .text
-global kmain
-kmain:
+global _start
+_start:
 fninit
 mov esp,stack_start
 push ebx ;multiboot info
