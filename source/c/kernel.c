@@ -54,7 +54,7 @@ int mem_high = 0;
 unsigned long ticks = 0;
 unsigned long tocks = 0;
 static volatile bool wait = false;
-//multiboot_info_t* mbi;
+multiboot_info_t* mbi;
 //RTC
 uint8_t second = 0;
 uint8_t minute = 0;
@@ -70,11 +70,11 @@ extern void* stack_start;
 extern void* stack_end;
 
 //Entry Point
-int main(/*multiboot_info_t* boot_mbi*/)
+int main(multiboot_info_t* boot_mbi)
 {		
 	Output("\nKernel Running!");
 	
-	//mbi = boot_mbi;
+	mbi = boot_mbi;
 	
 	ring_init = false;
 	
