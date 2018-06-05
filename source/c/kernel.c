@@ -72,6 +72,8 @@ extern void* stack_end;
 //Entry Point
 int main(multiboot_info_t* boot_mbi)
 {		
+	Output("\nKernel Running!");
+	
 	mbi = boot_mbi;
 	
 	ring_init = false;
@@ -141,6 +143,10 @@ int main(multiboot_info_t* boot_mbi)
 		panic();
 	}	
 	
+	//The below was for an attempt to do without multiboot/GRUB.
+	//Memory <1M
+	//pmm_claim((uint32_t*)0x0, getMemSize());
+	
 	//Initialize Time
 	uint8_t rb = cmos_read(0x0B);
 	second = cmos_read(0x0);
@@ -166,7 +172,7 @@ int main(multiboot_info_t* boot_mbi)
 	
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(promptLength, promptLine);
-	OutputLine(statusLine, "ykOS - %u/%u/%u - %u:%u:%u %s", month, day, year, hour, minute, second, afternoon ? "PM" : "AM");
+	OutputLine(statusLine, "ykOS - %2/%2/%2 - %2:%2:%2 %s", month, day, year, hour, minute, second, afternoon ? "PM" : "AM");
 	
 	//Initialize threading rings.
 	initialize_rings();
@@ -406,6 +412,12 @@ void CommandParser()
 		prompt[promptLength - 1] = '>';
 		Output("\nCurrent location set to 0x%x.", current);
 	}
+	else if (StartsWith(cmdbuffer, "touch "))
+	{
+		uintptr_t address = ykfs_next_empty(current);
+		ykfs_new_file(current, address, splitPos, 1, 1);
+		Output("\nFile created in socket at 0x%x.", address);
+	}
 	else if (StringCompare(cmdbuffer, "clear") || StringCompare(cmdbuffer, "cls"))
 	{
 		ClearScreen();
@@ -449,6 +461,14 @@ void CommandParser()
 	{
 		panic();
 	}
+	/*else if (StringCompare(cmdbuffer, "sizes"))
+	{
+		Output("\nsize_t: %d Bytes", sizeof(size_t));
+		Output("\nuintptr_t: %d Bytes", sizeof(uintptr_t));
+		Output("\nuint32_t: %d Bytes", sizeof(uint32_t));
+		Output("\nuint16_t: %d Bytes", sizeof(uint16_t));
+		Output("\nuint8_t: %d Bytes", sizeof(uint8_t));
+	}*/
 	else if (StringCompare(cmdbuffer, "cwd"))
 	{
 		Output("Current Location: 0x%x", current);
@@ -473,30 +493,11 @@ void CommandParser()
 
 void TestFunction()
 {		
-	uintptr_t ramdisk = get_ramdisk(16384, 256);
+	uintptr_t ramdisk = get_ramdisk(4096);
 	Output("\nRamdisk at 0x%x", ramdisk);
 	uintptr_t entries = ykfs_get_entries(ramdisk);
 	Output("\nEntries start at 0x%x", entries);
-	size_t variable_size = ((ykfs_header_t*)ramdisk)->format.FatEntryVariableSize;
-	uintptr_t temp = entries;
-	memCopyRange("Test.hex", (char*)entries, sizeof("Test.hex"));
-	uint32_t* uie = (uint32_t*)temp;
-	Output("\nName written at 0x%x", uie);
-	uie+=4;
-	*uie = entries + (((ykfs_header_t*)ramdisk)->format.EntryCount * variable_size * 3);
-	*(uint32_t*)(*uie) = 0xDEAD;
-	Output("\nData written at 0x%x", *uie);
-	Output("\nAddress written at 0x%x", uie);
-	uie+=4;
-	*uie = sizeof(uint32_t);
-	Output("\nSize written at 0x%x", uie);
-	Output("\nString Length: %d Bytes", sizeof("Test.hex"));
-	intptr_t result = ykfs_find_entry(ramdisk, "Test.hex");
-	Output("\nResult: 0x%x", result);
-	Output("\nFilename: %s", (char*)result);
-	Output("\nAddress: 0x%x", *((uint32_t*)result + 4));
-	Output("\nSize: %d Bytes", *((uint32_t*)result + 8));
-	Output("\nData: 0x%x", *(uint32_t*)*((uint32_t*)result + 4));
+	ykfs_new_file(ramdisk, entries, "Test.hex", 1, 1);
 	for (;;);
 }
 
@@ -707,6 +708,14 @@ void memFillD(void* address, int length, uint32_t value)
 	}
 }
 
+void mem_fill(uint8_t* address, size_t size, uint8_t value)
+{
+	while (size-- > 0)
+	{
+		*address++ = value;
+	}
+}
+
 uint8_t cmos_read(uint8_t reg)
 {
 	outb(0x70, reg);
@@ -723,6 +732,13 @@ void sti()
 {
 	current_thread->interrupt_state = true;
 	__asm__ volatile("sti");
+}
+
+int getMemSize()
+{
+	int i;
+	__asm__ volatile("int 12" : "=ax" (i));
+	return i;
 }
 
 int strlen(char* target)

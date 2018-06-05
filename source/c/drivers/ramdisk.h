@@ -9,4 +9,4 @@ Simple ramdisk driver header.
 */
 
 //Function Declarations
-intptr_t get_ramdisk(size_t size_in_bytes, uint32_t fat_width);
+uintptr_t get_ramdisk(size_t size_in_bytes/*, uint32_t fat_width*/);

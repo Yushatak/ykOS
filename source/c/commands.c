@@ -118,27 +118,45 @@ void cmd_List(char* args)
 		}
 		else ykfs = current;
 	}
+	/*ykfs_header_t* header = (ykfs_header_t*)ykfs;
+	size_t variable_size = header->format.FatEntryVariableSize;
+	uint32_t* entries = (uint32_t*)ykfs_get_entries(ykfs);*/
+	/*for (int i = 0; i < header->format.EntryCount * 3; i+=3)
+	{
+		if (entries[i+2] > 0)
+			Output("\n%s/%x/%d", entries[i], entries[i+1], entries[i+2]);
+	}*/
+	
+	/*for (uint32_t* address = entries; address < (entries + header->format.Length); address += header->format.EntrySize)
+	{
+		uint32_t size = *(uint32_t*)(address + header->format.EntrySize);
+		if (size > 0)
+			Output("\n%s - %d Bytes", (char*)address, size);
+	}*/
 	Output("\nFiles at 0x%x", ykfs);
 	ykfs_header_t* header = (ykfs_header_t*)ykfs;
-	size_t variable_size = header->format.FatEntryVariableSize;
 	uintptr_t entries = ykfs_get_entries(ykfs);
-	size_t entry_size = variable_size * 3 / 8;
+	size_t entry_size = header->format.EntrySize;
 	size_t entry_count = header->format.EntryCount;
 	int file_count = 0;
-	uint32_t space_used = 0;
-	uint32_t space_total = (header->format.Length) - (entry_count * entry_size);
-	for (int i = 0; i < entry_count; i++)
+	size_t space_used = 0;
+	size_t space_total = header->format.Length;
+	for (uintptr_t addr = entries; addr < entries + space_total; addr+=entry_size)
+	//for (uint32_t addr = entries; addr < (entries + header->format.Length); addr+=3)
 	{
-		size_t filesize = *((uint32_t*)entries + 8);
-		if (filesize > 0)
+		ykfs_entry_t* entry = (ykfs_entry_t*)addr;
+		////char* name = (char*)entries[i * 3 + i];
+		//uintptr_t socket = entries;
+		////uint32_t address = entries[i * 3 + i + 4];
+		////uint32_t filesize = entries[i * 3 + i + 5];
+		//entries += entry_size;	
+		if (entry->size > 0 && entry->address > 0)// && entry->name[0] == 'T')
 		{
-			Output("\n%s", (char*)entries);
-			//Output("\nAddress: 0x%x", *((uint32_t*)entries + 4));
-			Output(" - %d Bytes", filesize);
-			space_used += filesize;
+			////&entries[i * 3 + i]
+			Output("\n0x%x: %s - 0x%x - %d Bytes", addr, entry->name, entry->address, entry->size);
+			space_used += entry->size;
 			file_count++;
 		}	
-		entries += entry_size;	
 	}
 	Output("\n%d/%d Files", file_count, entry_count);
 	Output("\n%d/%d Bytes Used", space_used, space_total);
@@ -147,15 +165,14 @@ void cmd_List(char* args)
 void cmd_Read(char* args, char mode)
 {
 	ykfs_header_t* header = (ykfs_header_t*)current;
-	size_t variable_size_bytes = header->format.FatEntryVariableSize / 8;
 	uint32_t* entry = (uint32_t*)ykfs_find_entry(current, args);
 	if (entry == 0) 
 	{
 		Output("\nFile not found.");
 		return;
 	}
-	char* address = (char*)*((uint32_t*)(entry + variable_size_bytes));
-	size_t size = *((uint32_t*)entry + (variable_size_bytes * 2));
+	char* address = (char*)*((uintptr_t*)(entry + 64));
+	size_t size = *((uint32_t*)(entry + 68));
 	Output("\n");
 	size_t increment = 0;
 	if (mode == 'b') increment = sizeof(uint32_t);
