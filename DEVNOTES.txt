@@ -1,0 +1,2 @@
+When you use the "nxt" command, it doesn't work until you use "ls".
+Something is wrong with the ramdisk, either it's being overwritten or incompletely written.

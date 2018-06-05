@@ -31,7 +31,7 @@ typedef struct ring
 {
 	uint8_t rid;
 	uint32_t thread_count;
-	thread_t* top_thread;
+	thread_t* top_thread; //Need to figure out my intended meaning for this and document it - I imagine it's like a "root" or "primary" thread for a ring.
 } ring_t;
 
 //Typedefs

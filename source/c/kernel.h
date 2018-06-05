@@ -52,6 +52,7 @@ void CommandParser();
 void pad_left(char target[], char c, int length);
 void pad_right(char target[], char c, int length);
 int strlen(char* target);
+void updateTimeFromBIOS();
 
 //Handlers
 void Interrupt(isr_registers_t* regs);

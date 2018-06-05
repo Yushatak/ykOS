@@ -63,6 +63,7 @@ void initialize_rings()
 	boot_thread->next_thread = test_thread;
 	boot_thread->previous_thread = test_thread;
 	
+	//Use the below if we only want the boot thread on ring zero.
 	/*boot_thread->next_thread = boot_thread;
 	boot_thread->previous_thread = boot_thread;*/
 	

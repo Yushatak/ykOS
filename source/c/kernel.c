@@ -25,6 +25,7 @@ Kernel Memory Map
 #include "multiboot.h"
 #include "paging.h"
 #include "pmm.h"
+//#include "vmm.h"
 #include "memory.h"
 #include "commands.h"
 #include "scheduler.h"
@@ -41,6 +42,7 @@ Kernel Memory Map
 //String Declarations
 char status[79] = {0};
 char prompt[79] = "0x00000000>";
+char version[7] = "1.0.000";
 
 //Pointers
 uint8_t* memory = (uint8_t*)0x0;
@@ -147,32 +149,14 @@ int main(multiboot_info_t* boot_mbi)
 	//Memory <1M
 	//pmm_claim((uint32_t*)0x0, getMemSize());
 	
-	//Initialize Time
-	uint8_t rb = cmos_read(0x0B);
-	second = cmos_read(0x0);
-	minute = cmos_read(0x2);
-	hour = cmos_read(0x4);
-	day = cmos_read(0x7);
-	month = cmos_read(0x8);
-	year = cmos_read(0x9);
-	if (!(rb & 0x04)) //BCD->Binary If Relevant
-	{
-		second = (second & 0x0F) + ((second/16)*10);
-		minute = (minute & 0x0F) + ((minute/16)*10);
-		hour = ((hour & 0x0F) + (((hour & 0x70)/16)*10)) | (hour & 0x80);
-		day = (day & 0x0F) + ((day/16)*10);
-		month = (month & 0x0F) + ((month/16)*10);
-		year = (year & 0x0F) + ((year/16)*10);
-	}
-	afternoon = hour > 12;
-	hour = ((hour + 11) % 12) + 1;
+	updateTimeFromBIOS();
 	
 	initialize_keyboard();
 	initialize_screen();
 	
 	OutputAt(prompt, 0, promptLine);
 	SetCursor(promptLength, promptLine);
-	OutputLine(statusLine, "ykOS - %2/%2/%2 - %2:%2:%2 %s", month, day, year, hour, minute, second, afternoon ? "PM" : "AM");
+	OutputLine(statusLine, "ykOS - %2/%2/%2 - %2:%2:%2 %s - %s", month, day, year, hour, minute, second, afternoon ? "PM" : "AM", version);
 	
 	//Initialize threading rings.
 	initialize_rings();
@@ -262,6 +246,28 @@ void KeyboardHandler(isr_registers_t* regs)
 	//else it's an unhandled scancode.
 }
 
+void updateTimeFromBIOS()
+{
+	uint8_t rb = cmos_read(0x0B);
+	second = cmos_read(0x0);
+	minute = cmos_read(0x2);
+	hour = cmos_read(0x4);
+	day = cmos_read(0x7);
+	month = cmos_read(0x8);
+	year = cmos_read(0x9);
+	if (!(rb & 0x04)) //BCD->Binary If Relevant
+	{
+		second = (second & 0x0F) + ((second/16)*10);
+		minute = (minute & 0x0F) + ((minute/16)*10);
+		hour = ((hour & 0x0F) + (((hour & 0x70)/16)*10)) | (hour & 0x80);
+		day = (day & 0x0F) + ((day/16)*10);
+		month = (month & 0x0F) + ((month/16)*10);
+		year = (year & 0x0F) + ((year/16)*10);
+	}
+	afternoon = hour > 12;
+	hour = ((hour + 11) % 12) + 1;
+}
+
 void PageFaultHandler(isr_registers_t* regs)
 {
 	uint32_t cr2 = get_cr2();
@@ -278,7 +284,7 @@ void TimerHandler(isr_registers_t* regs)
 {
 	ticks++;
 	current_thread->ticks++;
-	if (ticks % 1000 == 0)
+	if (ticks % 100 == 0) //VirtualBox seems to say 1000 is 10 seconds, so we're going with this for now.
 	{
 		if (++second >= 60)
 		{
@@ -293,7 +299,7 @@ void TimerHandler(isr_registers_t* regs)
 				};
 			}
 		}
-		OutputLine(statusLine, "ykOS - %2/%2/%2 - %2:%2:%2 %s", month, day, year, hour, minute, second, afternoon ? "PM" : "AM");
+	OutputLine(statusLine, "ykOS - %2/%2/%2 - %2:%2:%2 %s - %s", month, day, year, hour, minute, second, afternoon ? "PM" : "AM", version);
 	}
 	if (ticks % 10 == 0) next_thread();
 }
@@ -484,6 +490,14 @@ void CommandParser()
 		Output("\nTicks: %d", ticks);
 		Output("\nTocks: %d", tocks);
 	}
+	/*else if (StringCompare(cmdbuffer, "check "))
+	{
+		cmd_Check(splitPos);
+	}
+	else if (StringCompare(cmdbuffer, "free "))
+	{
+		cmd_Free(splitPos);
+	}*/
 	else 
 	{
 		Output("Invalid Command.");

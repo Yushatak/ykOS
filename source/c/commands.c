@@ -17,7 +17,7 @@ This contains the code for individual built-in command applets in the kernel she
 #include "paging.h"
 #include "commands.h"
 #include "memory.h"
-#include "vmm.h"
+//#include "vmm.h"
 #include "drivers/ykfs.h"
 
 #define BOCHS_BP() __asm__ volatile ("xchg bx,bx");
