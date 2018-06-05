@@ -51,7 +51,8 @@ echo =Building Flat Binary Image...
 copy /b out\boot.bin+out\kernel.bin out\ykOS.bin
 echo =Building Floppy Image...
 imdisk -a -f out\ykOS.img -m B: -o rw
+dat b /w
 copy out\kernel.elf b:\kernel.elf /y
-imdisk -d -m B:
+imdisk -D -m B:
 echo ---------------------------------------------------------
 echo Done! You may find the results in the "out" subdirectory.
