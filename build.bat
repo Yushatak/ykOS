@@ -19,13 +19,13 @@ mkdir out
 echo =Placing Empty Floppy Image...
 copy build\skeleton.img out\ykOS.img /y
 echo =Assembling .ASM Files...
-nasm source\asm\boot.asm -f BIN -o out\boot.bin
+rem nasm source\asm\boot.asm -f BIN -o out\boot.bin
 nasm source\asm\isr.asm -f ELF -o obj\isr.o 
 nasm source\asm\kstub.asm -f ELF -o obj\kstub.o
 nasm source\asm\gdt.asm -f ELF -o obj\gdt.o
 nasm source\asm\a20.asm -f ELF -o obj\a20.o
 nasm source\asm\ctxt.asm -f ELF -o obj\ctxt.o
-nasm source\asm\end.asm -f ELF -o obj\end.o
+rem nasm source\asm\end.asm -f ELF -o obj\end.o
 echo =Compiling Kernel...
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -c source/c/kernel.c -o obj/kernel.o -g
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -m32 -c source/c/idt.c -o obj/idt.o -g
@@ -42,13 +42,13 @@ i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -st
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -c source/c/drivers/ramdisk.c -o obj/ramdisk.o -g
 i486-elf-gcc -Os -ffreestanding -Wall -Werror -Wno-unused-variable -pedantic -std=c99 -masm=intel -c source/c/drivers/ykfs.c -o obj/ykfs.o -g
 echo =Linking Kernel(s)...
-i486-elf-ld --relax -static -n obj/*.o -o out/kernel.bin --oformat=binary
+rem i486-elf-ld --relax -static -n obj/*.o -o out/kernel.bin --oformat=binary
 i486-elf-ld --relax -static -n -T build/kernel.ld --oformat=elf32-i386
 echo =Finalizing ELF Kernel...
 i486-elf-objcopy obj/kernel.elf --only-keep-debug out/kernel.sym
 i486-elf-objcopy obj/kernel.elf -S out/kernel.elf -R .eh_frame -R .comment
-echo =Building Flat Binary Image...
-copy /b out\boot.bin+out\kernel.bin out\ykOS.bin
+rem echo =Building Flat Binary Image...
+rem copy /b out\boot.bin+out\kernel.bin out\ykOS.bin
 echo =Building Floppy Image...
 imdisk -a -f out\ykOS.img -m B: -o rw
 dat b /w
