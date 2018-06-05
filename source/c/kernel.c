@@ -22,7 +22,7 @@ Kernel Memory Map
 #include "inline.h"
 #include "screen.h"
 #include "keyboard.h"
-//#include "multiboot.h"
+#include "multiboot.h"
 #include "paging.h"
 #include "pmm.h"
 #include "memory.h"
@@ -109,8 +109,43 @@ int main(multiboot_info_t* boot_mbi)
 	registerISR(0x0E, &PageFaultHandler);
 	registerISR(0x30, &DumpRegisters);
 	
+	//Memory Map
+	if (CHECK_FLAG(mbi->flags, 1)) 
+	{
+		mem_low = mbi->mem_lower;
+		mem_high = mbi->mem_upper;
+		mem_total = mbi->mem_lower + mbi->mem_upper;
+		if (CHECK_FLAG(mbi->flags, 6))
+		{
+			current_page = NULL;
+			memory_map_t* mm_end = (memory_map_t*)(mbi->mmap_addr + mbi->mmap_length);
+			for (memory_map_t* mm = (memory_map_t*)(mbi->mmap_addr);
+				mm < mm_end;
+				mm = (memory_map_t*)((unsigned int)mm + mm->size + sizeof(unsigned int)))
+			{
+				uint32_t base = COMBINE_16_32(mm->base_addr_high, mm->base_addr_low);
+				uint32_t size = COMBINE_16_32(mm->length_high, mm->length_low);
+				if (base > 0 && size > 0 && mm->type == 1)
+				{
+					pmm_claim((uint32_t*)base, size);
+				}
+			}
+		}
+		else
+		{
+			Output("\nInvalid Memory Map!");
+			panic();
+		}
+	}
+	else 
+	{
+		Output("\nInvalid Flags (0x%x)!", mbi->flags);
+		panic();
+	}	
+	
+	//The below was for an attempt to do without multiboot/GRUB.
 	//Memory <1M
-	pmm_claim((uint32_t*)0x0, getMemSize());
+	//pmm_claim((uint32_t*)0x0, getMemSize());
 	
 	//Initialize Time
 	uint8_t rb = cmos_read(0x0B);
