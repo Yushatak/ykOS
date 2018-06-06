@@ -1,2 +1,2 @@
-When you use the "nxt" command, it doesn't work until you use "ls".
-Something is wrong with the ramdisk, either it's being overwritten or incompletely written.
+Need to make the ramdisk driver support ramdisk removal.
+Need to make the ramdisk driver keep track of ramdisks it has created - only has to remember the start addresses and it can read the other info from the headers.

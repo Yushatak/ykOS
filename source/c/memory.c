@@ -63,3 +63,14 @@ uintptr_t get_linked_pages(size_t size_in_bytes)
 	last_page[0] = pages[0]; //Loop the list.
 	return ret;
 }
+
+//Untested!
+void free_linked_pages(uintptr_t page_address)
+{
+	uint32_t next_page = *(uint32_t*)page_address; //Get address of next page (first 32 bytes in page).
+	while (next_page != 0) //Loop as long as the next page value isn't zero.
+	{
+		next_page = *(uint32_t*)page_address; //Get the page that this one points to for the next loop iteration.
+		pmm_free((void*)page_address); //Free the page.
+	}
+}

@@ -10,3 +10,4 @@ Simple ramdisk driver header.
 
 //Function Declarations
 uintptr_t get_ramdisk(size_t size_in_bytes/*, uint32_t fat_width*/);
+void discard_ramdisk(uintptr_t ramdisk);

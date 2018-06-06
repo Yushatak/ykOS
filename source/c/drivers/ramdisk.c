@@ -20,3 +20,8 @@ uintptr_t get_ramdisk(size_t size_in_bytes/*, size_t fat_width*/)
 	ykfs_format_memory(ramdisk, size_in_bytes, 4096/*, fat_width*/, 0);
 	return ramdisk;
 }
+
+void discard_ramdisk(uintptr_t ramdisk)
+{
+	free_linked_pages(ramdisk);
+}
