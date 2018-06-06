@@ -1,0 +1,45 @@
+ykFS File System Specification
+January 31, 2014
+
+A certain number of sectors (1 or more) may be reserved at the start of the disk (after the boot sector) for an OS or filesystem kernel, this number is deducted from the total amount of space before other calculations.
+
+32 bytes of the second sector are always reserved for header information, and only the first 12 of these are currently used. The first two bytes of this sector are a jump instruction to jump over the following data. The next two bytes are a ushort describing the bit-width of the FAT entry variables. The next four bytes describe the cluster size (if zero, it is 512 bytes a.k.a. a sector). Finally, the last four bytes are a uint containing the number of sectors being reserved for whatever purpose. After this, the code to be executed begins.
+
+JMP instruction (2 bytes)
+ushort FATEntryVariableSize (2 bytes)
+uint ClusterSize (4 bytes)
+uint ReservedSectors (4 bytes)
+
+Note that the FAT entry variable size must vary with the size of the disk at format-time, otherwise parts of the disk may not be usable. This value also determines the maximum file size in the file system. If a 256-bit FAT is used, for example, the "Size" variable (see below) maxes out at 4294967295 bytes, or (very roughly) ~4GB. As the value goes up, the drive size goes up, or the cluster size goes down, more space is used for the FAT, so it’s all a balancing act of tradeoffs.
+
+After those sectors, the FAT begins. The bit-width of the file system describes the size of one variable in a FAT entry. A FAT entry is as follows:
+
+Name
+Address
+Size
+
+Each of these is an N-bit value depending on the width of the FAT (i.e., FAT256 would have 32-byte variables).
+
+The size of the FAT is determined by the amount of disk space being divided up into the most files it could be. If the cluster size is 4KB, that would be the total amount of space (minus reserved) divided by 4KB, multiplied by the size of a FAT variable, multiplied by 3 (because there are three such variables).
+
+For example, if there is a 2GB disk using a 256-bit FAT and 4KB clusters, the calculations are as follows:
+
+2GB = 2048MB = 2097152KB = 2147483648B
+2147483648 - 1024 (boot sector + one reserved sector) = 2147482624
+2147482624 / 4096 (4KB clusters) = 524287 clusters (round down)
+524287 * 32 (variable size) = 16777184
+16777184 * 3 (variable count) = 50331552
+50331552B = 48MB (rounded up)
+2048MB - 48MB = 2000MB space
+
+That leaves us with:
+1024 Bytes (boot sector/reserved)
+~48MB FAT
+~2000MB Space
+2.34% of space used for the FAT
+
+There are optimizations that could be worked into this, because currently it allocates FAT space for the parts of the disk that are then taken up by the FAT itself. The problem in reclaiming this space is that each time you reclaim it, there is more to reclaim. In this scenario, 2.34% of space is used for the FAT. This means that 2.34% of that space could be further shaved off - this is only ~1.12MB, though. Since this scales with the size of the drive, it is unlikely that it will ever be a relevant amount of space, but it would be a nice feature to add in the future.
+
+To find a file on a disk with this filesystem, the software would parse the second sector of the disk to get the parameters, jump over any reserved sectors, loop through the FAT looking for the correct file name, then return the address and size. These values will give the software the absolute location (LBA) and length of the file (in bytes), and it can then be read or otherwise used.
+
+Very different from most file systems, files must be stored sequentially - no fragmentation, no gaps, etc.. This means that a write will not be possible if there is enough space but the space is not sequential. Dynamically defragmenting things upon deletion of a file is critical in maintaining filesystem performance/space available.

@@ -1,0 +1,48 @@
+.yx file format (Yushatak eXecutable)
+January 27, 2014
+
+|File Structure|
+[DOS STUB] (should be considered valid, but definitely optional)
+[HEADER] (0x30 bytes)
+[ENTRYTABLE] (entry table point points here, set of entries as described below - this is optional because a single entry point is stored in the header for simple sequential code) (0x36 bytes or more)
+[CODE] (entry point points here, optional to allow for resource files/etc.) (variable size)
+[METADATA] (metadata point points here, optional) (0x07 bytes or more)
+[RESOURCES] (set of resources as described below, resource point points here, optional) (0x04 bytes or more)
+
+|File Header|
+byte[2] YK (Magic, start file header) 0x00-0x01
+word Executable Format Version 0x02-0x03
+word Bit-Width 0x04-0x05
+word Architecture 0x06-0x07
+byte Endian-ness ("L" for little, "B" for big) 0x08
+byte Reserved (future flag like the endian-ness one probably)
+ulong Flags (reserved) 0x09-0x18
+word Entry Name Length (if zero, defaults to 32 bytes) 0x19-0x1A
+uint Entry Point (offset from YK magic in bytes) 0x1B-0x1E
+uint Entry Table Point (offset from YK magic in bytes, if this is zero than this section is not present) 0x1F-0x22
+uint Metadata Point (offset from YK magic in bytes, if this is zero than this section is not present) 0x23-0x26
+uint Resource Point (offset from YK magic in bytes, if this is zero than this section is not present) 0x27-0x30
+
+|Entry Format|
+byte[32] Name (character data)
+uint Offset (relative to code point, in bytes)
+
+|Metadata Format|
+word FileVersionMajor 0x00-0x01
+word FileVersionMinor 0x02-0x03
+word OSVersionMajor 0x04-0x05
+word OSVersionMinor 0x06-0x07
+NTS Name (program name) 0x08-0x??
+NTS Author (company, single person’s name, etc.) 0x??-0x??
+NTS Notes (misc. data, a description or whatever else) 0x??-0x??
+(Anything here will be ignored by any loader that doesn’t know future formats, allowing for future expansion or for the user to add their own metadata)
+
+|Resource Format|
+byte[4] YKRS (Magic, start resource - this is per-resource) 0x00-0x03
+uint Type (all zeroes if no predefined type, which means the resource data starts with a null-terminated string as the type name) 0x04-0x07
+NTS Name (MAY OR MAY NOT BE PRESENT) 0x04-0x??
+<ACTUAL RESOURCE DATA> 0x??-0x??
+byte[4] YKRE (Magic, end resource data - this is per-resource) 0x??-0x??
+
+Notes:
+- "NTS" as the type in the structures here means null-terminated string.
