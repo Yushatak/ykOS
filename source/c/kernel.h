@@ -1,8 +1,8 @@
 /*
 Kernel Header (kernel.h)
 Part of the ykOS Project
-Written by J. "Yushatak" S.
-Copyright Yushatak 2014
+Written by Johnathan "Yushatak" Schur
+Copyright Yushatak 2014-2018
 All Rights Reserved
 
 This provides a few type declarations, static translation/lookup tables, and declarations

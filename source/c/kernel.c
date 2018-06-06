@@ -1,8 +1,8 @@
 /*
 Kernel Core (kernel.c)
 Part of the ykOS Project
-Written by J. "Yushatak" S.
-Copyright Yushatak 2014
+Written by Johnathan "Yushatak" Schur
+Copyright Yushatak 2014-2018
 All Rights Reserved
 
 This is the bulk of the kernel.
@@ -169,6 +169,7 @@ void kernel_loop()
 {
 	for (;;);
 }
+
 void KeyboardHandler(isr_registers_t* regs)
 {
 	//Need to design a system to handle interrupt handler feedback in the kernel
@@ -341,7 +342,6 @@ void panic()
 	Output("\nKernel Panic!\n");
 	__asm__ volatile ("int 0x30");
 }
-
 
 void WaitKey()
 {
