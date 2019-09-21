@@ -150,7 +150,7 @@ void cmd_List(char* args)
 		////uint32_t address = entries[i * 3 + i + 4];
 		////uint32_t filesize = entries[i * 3 + i + 5];
 		//entries += entry_size;	
-		Output("\nEntry Address: Name - File Address - Size")
+		Output("\nEntry Address: Name - File Address - Size");
 		if (entry->size > 0 && entry->address > 0 && entry->name[0] != '\0')
 		{
 			////&entries[i * 3 + i]
