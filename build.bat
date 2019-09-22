@@ -2,9 +2,8 @@
 rem Build Script (build.bat)
 
 rem Part of the ykOS Project
-rem Written by Johnathan "Yushatak" Schur.
-
-rem Copyright Yushatak 2014-2018
+rem Written by E. "Yushatak" S.
+rem Copyright Yushatak 2014-2019
 rem All Rights Reserved
 rem
 echo Building ykOS

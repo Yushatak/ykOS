@@ -1,8 +1,8 @@
 /*
 Interrupt Descriptor Table (idt.c)
 Part of the ykOS Project
-Written by J. "Yushatak" S.
-Copyright Yushatak 2014
+Written by E. "Yushatak" S.
+Copyright Yushatak 2014-2019
 All Rights Reserved
 
 This contains code to generate the entire IDT on-the-fly, and then load it into the

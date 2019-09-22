@@ -1,8 +1,8 @@
 /*
 Physical Memory Manager (pmm.c)
 Part of the ykOS Project
-Written by Johnathan "Yushatak" Schur
-Copyright Yushatak 2014-2018
+Written by E. "Yushatak" S.
+Copyright Yushatak 2014-2019
 All Rights Reserved
 
 Manages and provides allocation/deallocation functionality for physical memory.

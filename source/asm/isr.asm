@@ -1,7 +1,7 @@
 ;Interrupt Service Routines (isr.asm)
 ;Part of the ykOS Project
-;Written by J. "Yushatak" S.
-;Copyright Yushatak 2014
+;Written by E. "Yushatak" S.
+;Copyright Yushatak 2014-2019
 ;All Rights Reserved
 ;
 ;This contains the ISR stub and macros/macro calls to generate stubs to

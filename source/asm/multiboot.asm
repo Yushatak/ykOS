@@ -1,3 +1,10 @@
+;Multiboot Header multiboot.asm)
+;Part of the ykOS Project
+;Written by E. "Yushatak" S.
+;Copyright Yushatak 2014-2019
+;All Rights Reserved
+;This provides multiboot support for the kernel so GRUB and others can load it.
+
 ;Constants
 cAlign equ 1<<0
 cMemInfo equ 1<<1

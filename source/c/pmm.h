@@ -1,8 +1,8 @@
 /*
 Physical Memory Manager Header (pmm.h)
 Part of the ykOS Project
-Written by Johnathan "Yushatak" Schur
-Copyright Yushatak 2014-2018
+Written by E. "Yushatak" S.
+Copyright Yushatak 2014-2019
 All Rights Reserved
 
 This contains declarations for the functions to manage and provide allocation/deallocation functionality for virtual memory.

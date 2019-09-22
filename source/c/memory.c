@@ -1,8 +1,8 @@
 /*
 Memory (memory.c)
 Part of the ykOS Project
-Written by J. "Yushatak" S.
-Copyright Yushatak 2014
+Written by E. "Yushatak" S.
+Copyright Yushatak 2014-2019
 All Rights Reserved
 
 Contains convenience functions which wrap the PMM, VMM, and paging into a simpler interface.

@@ -1,7 +1,7 @@
 ;Catapult Loader (boot.asm)
 ;Part of the ykOS Project
-;Written by Johnathan "Yushatak" Schur
-;Copyright Yushatak 2014-2018
+;Written by E. "Yushatak" S.
+;Copyright Yushatak 2014-2019
 ;All Rights Reserved
 ;
 ;This is the bootloader. It loads the specified number of sectors
@@ -149,7 +149,7 @@ spt dw 0x0012 ;18d
 
 Dot db '.',0
 Done db 13,10,'Kernel Loaded',13,10,0
-Banner db 'Catapult Bootloader',13,10,'Copyright Yushatak 2014-2018',13,10,'All Rights Reserved',13,10,0
+Banner db 'Catapult Bootloader',13,10,'Copyright Yushatak 2014-2019',13,10,'All Rights Reserved',13,10,0
 
 times 510-($-$$) db 0
 STACK_END dw 0xAA55
